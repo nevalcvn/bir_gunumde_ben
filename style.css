@@ -1,0 +1,514 @@
+/* ═══════════════════════════════════════════════════════════════
+   BİR GÜNÜMDE BEN  —  style.css
+   ═══════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── CUSTOM PROPERTIES ──────────────────────────────────────── */
+:root {
+  --text-dark:   #1c1e2e;
+  --text-light:  #e8eaf6;
+
+  /* card glass */
+  --card-bg:     rgba(255, 255, 255, 0.13);
+  --card-border: rgba(255, 255, 255, 0.22);
+  --card-hover:  rgba(255, 255, 255, 0.22);
+
+  /* timeline line */
+  --line-color:  rgba(255, 255, 255, 0.25);
+
+  /* transitions */
+  --bg-speed:    1.8s;
+  --ui-speed:    0.35s;
+}
+
+/* ── RESET / BASE ───────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  /* başlangıç rengi — JS sürekli inline style ile günceller */
+  background: #b8d8f0;
+  color: var(--text-dark);
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── ARKA PLAN GEÇİŞ OVERLAY ───────────────────────────────── */
+/*
+   Arka plan için çift-katman tekniği:
+   #bg-overlay pozisyon:fixed, tüm ekranı kaplar ve JS'den
+   rgba renkleri alır. CSS transition sayesinde yumuşak geçer.
+*/
+#bg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(160deg, #b8d8f0 0%, #d4e9f7 100%);
+  transition: background var(--bg-speed) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── YILDIZ CANVAS ──────────────────────────────────────────── */
+#stars-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+
+#stars-canvas.visible {
+  opacity: 1;
+}
+
+/* ── İLERLEME ÇUBUĞU ───────────────────────────────────────── */
+#progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.3)
+  );
+  z-index: 1000;
+  transition: width 0.12s linear;
+}
+
+/* ── STİCKY SAAT ────────────────────────────────────────────── */
+#sticky-clock {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 50px;
+  padding: 7px 22px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  color: inherit;
+  z-index: 999;
+  white-space: nowrap;
+  transition: color var(--bg-speed);
+}
+
+/* ── YAN BUTONLAR ───────────────────────────────────────────── */
+.side-btn {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50px;
+  padding: 20px 13px;
+  cursor: pointer;
+  z-index: 998;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  color: inherit;
+  transition:
+    background var(--ui-speed) ease,
+    transform   var(--ui-speed) ease,
+    box-shadow  var(--ui-speed) ease;
+}
+
+.side-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.10);
+}
+
+.side-btn.active-mode {
+  background: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.20);
+}
+
+#btn-left  { left: 16px; }
+#btn-right { right: 16px; }
+
+.side-btn .arrow {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.side-btn .label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+#btn-left .label {
+  transform: rotate(180deg);
+}
+
+/* ── HEADER ─────────────────────────────────────────────────── */
+header {
+  text-align: center;
+  padding: 94px 24px 56px;
+}
+
+.mode-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.20);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50px;
+  padding: 5px 16px;
+  margin-bottom: 18px;
+}
+
+.day-icon {
+  display: block;
+  font-size: 3.2rem;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.08));
+  transition: all 0.5s ease;
+}
+
+header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.2rem, 5.5vw, 4.6rem);
+  font-weight: 900;
+  line-height: 1.06;
+  color: inherit;
+  transition: color var(--bg-speed);
+}
+
+header h1 span {
+  font-style: italic;
+}
+
+.header-sub {
+  margin: 16px auto 0;
+  max-width: 500px;
+  font-size: 0.95rem;
+  font-weight: 300;
+  line-height: 1.75;
+  opacity: 0.72;
+}
+
+.scroll-hint {
+  margin-top: 38px;
+  font-size: 0.75rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  opacity: 0.45;
+  animation: bounce 2.2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(7px); }
+}
+
+/* ── TİMELINE WRAPPER ───────────────────────────────────────── */
+.timeline {
+  position: relative;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 16px 24px 300px;
+}
+
+/* dikey çizgi */
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.50) 0%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  transform: translateX(-50%);
+}
+
+/* geçiş sırasında soluklaşma */
+.timeline-panel {
+  transition: opacity 0.38s ease;
+}
+
+.timeline-panel.fading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── ZAMAN BLOĞU ────────────────────────────────────────────── */
+.time-block {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 160px;
+  opacity: 0;
+  transform: translateY(36px);
+  transition:
+    opacity  0.65s ease,
+    transform 0.65s ease;
+}
+
+.time-block.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* her ikinci blok ters */
+.time-block:nth-child(odd)  { flex-direction: row; }
+.time-block:nth-child(even) { flex-direction: row-reverse; }
+
+/* ── SAAT ETİKETİ ───────────────────────────────────────────── */
+.time-label-wrap {
+  width: 50%;
+  padding: 0 34px;
+  padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.time-block:nth-child(even) .time-label-wrap {
+  align-items: flex-start;
+}
+
+.time-label {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.10);
+  line-height: 1;
+}
+
+.time-phase {
+  font-size: 0.67rem;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  opacity: 0.62;
+  margin-top: 5px;
+}
+
+/* ── ORTA NOKTA ─────────────────────────────────────────────── */
+.dot {
+  position: absolute;
+  left: 50%;
+  top: 20px;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  border: 2.5px solid rgba(255, 255, 255, 0.40);
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.12);
+  z-index: 2;
+  transition: transform 0.28s ease;
+}
+
+.time-block:hover .dot {
+  transform: translateX(-50%) scale(1.45);
+}
+
+/* ── KART WRAPPER ───────────────────────────────────────────── */
+.card-wrap {
+  width: 50%;
+  padding: 0 34px;
+}
+
+/* ── KART ────────────────────────────────────────────────────── */
+.card {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    transform    0.28s ease,
+    box-shadow   0.28s ease,
+    background   0.28s ease,
+    border-color 0.28s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px) scale(1.018);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.10);
+  background: var(--card-hover);
+  border-color: rgba(255, 255, 255, 0.38);
+}
+
+/* ── KART BAŞLIĞI ───────────────────────────────────────────── */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px 18px;
+}
+
+.card-emoji {
+  font-size: 1.9rem;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+}
+
+.card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.card-subtitle {
+  font-size: 0.7rem;
+  opacity: 0.58;
+  margin-top: 2px;
+}
+
+.card-chevron {
+  margin-left: auto;
+  font-size: 0.82rem;
+  opacity: 0.45;
+  flex-shrink: 0;
+  transition:
+    transform var(--ui-speed) ease,
+    opacity   var(--ui-speed) ease;
+}
+
+.card.open .card-chevron {
+  transform: rotate(180deg);
+  opacity: 0.85;
+}
+
+/* ── DETAY PANELİ ───────────────────────────────────────────── */
+.card-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.52s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card.open .card-detail {
+  max-height: 420px;
+}
+
+.card-detail-inner {
+  padding: 4px 18px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.20);
+}
+
+.detail-row {
+  margin-top: 13px;
+}
+
+.detail-label {
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  opacity: 0.52;
+  margin-bottom: 5px;
+}
+
+.detail-text {
+  font-size: 0.83rem;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+.thought-text {
+  font-style: italic;
+  font-size: 0.80rem;
+  line-height: 1.65;
+  opacity: 0.78;
+  border-left: 2px solid rgba(255, 255, 255, 0.38);
+  padding-left: 10px;
+  margin-top: 3px;
+}
+
+/* ── KAYDIRMA ÇUBUĞU ────────────────────────────────────────── */
+::-webkit-scrollbar          { width: 5px; }
+::-webkit-scrollbar-track    { background: transparent; }
+::-webkit-scrollbar-thumb    { background: rgba(255,255,255,0.28); border-radius: 3px; }
+
+/* ── MOBİL ──────────────────────────────────────────────────── */
+.mobile-switch {
+  display: none;
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  gap: 10px;
+}
+
+.mobile-switch button {
+  background: rgba(255, 255, 255, 0.20);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 50px;
+  padding: 10px 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: inherit;
+  transition: background var(--ui-speed);
+}
+
+.mobile-switch button.active {
+  background: rgba(255, 255, 255, 0.40);
+}
+
+@media (max-width: 640px) {
+  .timeline::before  { left: 22px; }
+
+  .time-block,
+  .time-block:nth-child(even) {
+    flex-direction: column;
+  }
+
+  .time-label-wrap,
+  .time-block:nth-child(even) .time-label-wrap {
+    width: 100%;
+    padding-left: 52px;
+    padding-right: 14px;
+    align-items: flex-start;
+  }
+
+  .card-wrap {
+    width: 100%;
+    padding-left: 52px;
+    padding-right: 14px;
+    margin-top: 10px;
+  }
+
+  .dot { left: 22px; }
+
+  .side-btn      { display: none; }
+  .mobile-switch { display: flex; }
+}

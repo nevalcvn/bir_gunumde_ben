@@ -1,0 +1,2739 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bir Günümde Ben</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+/* ═══════════════════════════════════════════════════════════════
+   BİR GÜNÜMDE BEN  —  style.css
+   ═══════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── CUSTOM PROPERTIES ──────────────────────────────────────── */
+:root {
+  --text-dark:   #1c1e2e;
+  --text-light:  #e8eaf6;
+
+  /* card glass */
+  --card-bg:     rgba(255, 255, 255, 0.13);
+  --card-border: rgba(255, 255, 255, 0.22);
+  --card-hover:  rgba(255, 255, 255, 0.22);
+
+  /* timeline line */
+  --line-color:  rgba(255, 255, 255, 0.25);
+
+  /* transitions */
+  --bg-speed:    1.8s;
+  --ui-speed:    0.35s;
+}
+
+/* ── RESET / BASE ───────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  /* başlangıç rengi — JS sürekli inline style ile günceller */
+  background: #A6F1FF;
+  color: var(--text-dark);
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── ARKA PLAN GEÇİŞ OVERLAY ───────────────────────────────── */
+/*
+   Arka plan için çift-katman tekniği:
+   #bg-overlay pozisyon:fixed, tüm ekranı kaplar ve JS'den
+   rgba renkleri alır. CSS transition sayesinde yumuşak geçer.
+*/
+#bg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: linear-gradient(160deg, #A6F1FF 0%, #80e8ff 100%);
+  transition: background var(--bg-speed) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── YILDIZ CANVAS ──────────────────────────────────────────── */
+#stars-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 2s ease;
+}
+
+#stars-canvas.visible {
+  opacity: 1;
+}
+
+/* ── İLERLEME ÇUBUĞU ───────────────────────────────────────── */
+#progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.3)
+  );
+  z-index: 1000;
+  transition: width 0.12s linear;
+}
+
+/* ── STİCKY SAAT ────────────────────────────────────────────── */
+#sticky-clock {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 50px;
+  padding: 7px 22px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  color: inherit;
+  z-index: 999;
+  white-space: nowrap;
+  transition: color var(--bg-speed);
+}
+
+/* ── YAN BUTONLAR ───────────────────────────────────────────── */
+.side-btn {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50px;
+  padding: 20px 13px;
+  cursor: pointer;
+  z-index: 998;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  color: inherit;
+  transition:
+    background var(--ui-speed) ease,
+    transform   var(--ui-speed) ease,
+    box-shadow  var(--ui-speed) ease,
+    opacity     var(--ui-speed) ease;
+}
+
+.side-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+  transform: translateY(-50%) scale(1.05);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.10);
+}
+
+.side-btn.active-mode {
+  background: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.20);
+}
+.side-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) scale(0.85);
+}
+
+#btn-left  { left: 16px; }
+#btn-right { right: 16px; }
+
+.side-btn .arrow {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.side-btn .label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+#btn-left .label {
+  transform: rotate(180deg);
+}
+
+/* ── HEADER ─────────────────────────────────────────────────── */
+header {
+  text-align: center;
+  padding: 94px 24px 56px;
+}
+
+.mode-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.20);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50px;
+  padding: 5px 16px;
+  margin-bottom: 18px;
+}
+
+.day-icon {
+  display: block;
+  font-size: 3.2rem;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.08));
+  transition: all 0.5s ease;
+}
+
+header h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.2rem, 5.5vw, 4.6rem);
+  font-weight: 900;
+  line-height: 1.06;
+  color: inherit;
+  transition: color var(--bg-speed);
+}
+
+header h1 span {
+  font-style: italic;
+}
+
+.header-sub {
+  margin: 16px auto 0;
+  max-width: 500px;
+  font-size: 0.95rem;
+  font-weight: 300;
+  line-height: 1.75;
+  opacity: 0.72;
+}
+
+.scroll-hint {
+  margin-top: 38px;
+  font-size: 0.75rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  opacity: 0.45;
+  animation: bounce 2.2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(7px); }
+}
+
+/* ── TİMELINE WRAPPER ───────────────────────────────────────── */
+.timeline {
+  position: relative;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 16px 24px 300px;
+}
+
+/* dikey çizgi */
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.50) 0%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  transform: translateX(-50%);
+}
+
+/* geçiş sırasında soluklaşma */
+.timeline-panel {
+  transition: opacity 0.38s ease;
+}
+
+.timeline-panel.fading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── ZAMAN BLOĞU ────────────────────────────────────────────── */
+.time-block {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 220px;
+  opacity: 0;
+  transform: translateY(60px);
+  transition:
+    opacity  0.20s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.20s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Her blok biraz gecikmeli gelsin — sıralı efekt */
+.time-block:nth-child(1)  { transition-delay: 0s; }
+.time-block:nth-child(2)  { transition-delay: 0.08s; }
+.time-block:nth-child(3)  { transition-delay: 0.08s; }
+.time-block:nth-child(4)  { transition-delay: 0.08s; }
+.time-block:nth-child(5)  { transition-delay: 0.08s; }
+.time-block:nth-child(6)  { transition-delay: 0.08s; }
+.time-block:nth-child(7)  { transition-delay: 0.08s; }
+.time-block:nth-child(8)  { transition-delay: 0.08s; }
+.time-block:nth-child(9)  { transition-delay: 0.08s; }
+.time-block:nth-child(10) { transition-delay: 0.08s; }
+
+.time-block.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* her ikinci blok ters */
+.time-block:nth-child(odd)  { flex-direction: row; }
+.time-block:nth-child(even) { flex-direction: row-reverse; }
+
+/* ── SAAT ETİKETİ ───────────────────────────────────────────── */
+.time-label-wrap {
+  width: 50%;
+  padding: 0 34px;
+  padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.time-block:nth-child(even) .time-label-wrap {
+  align-items: flex-start;
+}
+
+.time-label {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.10);
+  line-height: 1;
+}
+
+.time-phase {
+  font-size: 0.67rem;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  opacity: 0.62;
+  margin-top: 5px;
+}
+
+/* ── ORTA NOKTA ─────────────────────────────────────────────── */
+.dot {
+  position: absolute;
+  left: 50%;
+  top: 20px;
+  transform: translateX(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  border: 2.5px solid rgba(255, 255, 255, 0.40);
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.12);
+  z-index: 2;
+  transition: transform 0.28s ease;
+}
+
+.time-block:hover .dot {
+  transform: translateX(-50%) scale(1.45);
+}
+
+/* ── KART WRAPPER ───────────────────────────────────────────── */
+.card-wrap {
+  width: 50%;
+  padding: 0 34px;
+  position: relative;
+}
+
+/* ── KART ────────────────────────────────────────────────────── */
+.card {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    transform    0.28s ease,
+    box-shadow   0.28s ease,
+    background   0.28s ease,
+    border-color 0.28s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px) scale(1.018);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.10);
+  background: var(--card-hover);
+  border-color: rgba(255, 255, 255, 0.38);
+}
+
+/* ── KART BAŞLIĞI ───────────────────────────────────────────── */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px 18px;
+}
+
+.card-emoji {
+  font-size: 1.9rem;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+}
+
+.card-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.card-subtitle {
+  display: none;
+}
+
+.card-chevron {
+  margin-left: auto;
+  font-size: 0.82rem;
+  opacity: 0.45;
+  flex-shrink: 0;
+  transition:
+    transform var(--ui-speed) ease,
+    opacity   var(--ui-speed) ease;
+}
+
+.card.open .card-chevron {
+  transform: rotate(180deg);
+  opacity: 0.85;
+}
+
+/* ── DETAY PANELİ ───────────────────────────────────────────── */
+.card-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.49s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card.open .card-detail {
+  max-height: 1400px;
+}
+
+.card-detail-inner {
+  padding: 4px 18px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.20);
+}
+
+.detail-row {
+  margin-top: 13px;
+}
+
+.detail-label {
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  opacity: 0.52;
+  margin-bottom: 5px;
+}
+
+.detail-text {
+  font-size: 0.83rem;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+.thought-text {
+  font-style: italic;
+  font-size: 0.80rem;
+  line-height: 1.65;
+  opacity: 0.78;
+  border-left: 2px solid rgba(255, 255, 255, 0.38);
+  padding-left: 10px;
+  margin-top: 3px;
+}
+
+/* ── KAYDIRMA ÇUBUĞU ────────────────────────────────────────── */
+.thought-bubble {
+  display: none;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(100% + 14px);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgba(28, 30, 46, 0.88);
+  border-radius: 18px;
+  padding: 12px 16px;
+  font-size: 0.80rem;
+  font-style: italic;
+  line-height: 1.6;
+  width: max-content;
+  max-width: 260px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.13);
+  z-index: 100;
+}
+.thought-bubble::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 0 8px 8px 8px;
+  border-style: solid;
+  border-color: transparent transparent rgba(255,255,255,0.92) transparent;
+}
+.thought-bubble::after {
+  content: '💭';
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1rem;
+}
+.thought-bubble.visible {
+  display: block;
+  animation: bubblePop 0.28s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+@keyframes bubblePop {
+  from { opacity: 0; transform: translateX(-50%) scale(0.85) translateY(-6px); }
+  to   { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+}
+
+/* ── OTOBÜS ANİMASYONU ── */
+#bus-widget {
+  width: 100%;
+  height: 36px;
+  position: relative;
+  overflow: hidden;
+  margin: 10px 0 4px;
+  pointer-events: none;
+}
+#bus-icon {
+  position: absolute;
+  font-size: 1.6rem;
+  top: 0;
+  left: -10%;
+  transition: none;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+}
+
+/* ── DÖNÜŞ OTOBÜSÜ ── */
+#return-bus-widget {
+  width: 100%;
+  height: 36px;
+  position: relative;
+  overflow: hidden;
+  margin: 10px 0 4px;
+  pointer-events: none;
+}
+#return-bus-icon {
+  position: absolute;
+  font-size: 1.6rem;
+  top: 0;
+  left: -15%;
+  transition: none;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+}
+
+/* ── AYAK İZİ ANİMASYONU ── */
+#footprint-widget {
+  width: 100%;
+  height: 50px;
+  position: relative;
+  overflow: hidden;
+  margin: 10px 0 4px;
+  pointer-events: none;
+}
+.footprint {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  width: 38px;
+  height: 22px;
+}
+.foot-right { top: 4px; }
+.foot-left  { top: 22px; }
+
+.footprint svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  opacity: 0.55;
+}
+
+/* ── NOT DEFTERİ ── */
+.notebook {
+  background: #fffef0;
+  border: 1.5px solid rgba(0,0,0,0.10);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  font-family: 'Inter', monospace;
+  font-size: 0.75rem;
+  color: #333;
+  line-height: 1.9;
+  position: relative;
+  box-shadow: 2px 2px 8px rgba(0,0,0,0.06);
+}
+.notebook::before {
+  content: '';
+  position: absolute;
+  left: 28px; top: 0; bottom: 0;
+  width: 1.5px;
+  background: rgba(180,180,255,0.5);
+}
+.notebook-line {
+  padding-left: 18px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  min-height: 22px;
+}
+.notebook-title {
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: #666;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  padding-left: 18px;
+}
+
+/* ── İÇECEK SEÇİCİ ── */
+.drink-picker {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.drink-btn {
+  flex: 1;
+  border: none;
+  border-radius: 50px;
+  padding: 7px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.04em;
+}
+.drink-btn.lemon {
+  background: rgba(255,240,80,0.35);
+  color: #7a6500;
+  border: 1.5px solid rgba(255,220,0,0.5);
+}
+.drink-btn.coffee {
+  background: rgba(140,80,30,0.18);
+  color: #5c3010;
+  border: 1.5px solid rgba(140,80,30,0.35);
+}
+.drink-btn.active-lemon {
+  background: rgba(255,235,50,0.7);
+  border-color: #e6c800;
+  box-shadow: 0 0 12px rgba(255,220,0,0.4);
+}
+.drink-btn.active-coffee {
+  background: rgba(140,80,30,0.55);
+  color: #fff;
+  border-color: #8c501e;
+  box-shadow: 0 0 12px rgba(140,80,30,0.35);
+}
+
+/* ── KARANKIK MOD ── */
+.dark-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  background: rgba(255,255,255,0.18);
+  border: 1.5px solid rgba(255,255,255,0.30);
+  border-radius: 50px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: inherit;
+  transition: all 0.4s ease;
+  width: fit-content;
+}
+.dark-toggle-btn:hover {
+  background: rgba(255,255,255,0.28);
+}
+.dark-mode-active .card {
+  background: rgba(10, 10, 30, 0.88) !important;
+  border-color: rgba(80,120,255,0.4) !important;
+}
+.dark-mode-active .card-title,
+.dark-mode-active .card-subtitle,
+.dark-mode-active .detail-text,
+.dark-mode-active .detail-label,
+.dark-mode-active .time-label,
+.dark-mode-active .time-phase {
+  color: rgba(160,200,255,0.9) !important;
+}
+.dark-mode-active .detail-text {
+  font-family: monospace;
+  font-size: 0.78rem;
+  color: #7fffb2 !important;
+}
+.dark-toggle-btn.lit {
+  background: rgba(10,10,30,0.75);
+  border-color: rgba(80,120,255,0.5);
+  color: #7fffb2;
+  box-shadow: 0 0 16px rgba(80,120,255,0.3);
+}
+.code-editor {
+  margin-top: 12px;
+  border-radius: 10px;
+  overflow: hidden;
+  font-family: 'Courier New', monospace;
+  font-size: 0.72rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+.editor-titlebar {
+  background: #2d2d2d;
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.editor-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.editor-dot.red    { background: #ff5f57; }
+.editor-dot.yellow { background: #febc2e; }
+.editor-dot.green  { background: #28c840; }
+.editor-filename {
+  color: #aaa;
+  font-size: 0.68rem;
+  margin-left: 8px;
+  letter-spacing: 0.04em;
+}
+.editor-body {
+  background: #1e1e2e;
+  padding: 10px 14px;
+  line-height: 1.75;
+}
+.editor-line {
+  display: flex;
+  gap: 10px;
+  white-space: pre;
+}
+.ln  { color: #555; min-width: 14px; text-align: right; user-select: none; }
+.kw  { color: #c792ea; }
+.mod { color: #82aaff; }
+.fn  { color: #82cfff; }
+.str { color: #c3e88d; }
+.cm  { color: #546e7a; font-style: italic; }
+
+.music-player {
+  margin-top: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+.music-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.music-toggle:hover { background: rgba(255,255,255,0.12); }
+.music-icon { font-size: 1.2rem; }
+.music-toggle-text { flex: 1; }
+.music-arrow {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  transition: transform 0.3s ease;
+}
+
+.playlist {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.49s cubic-bezier(0.4,0,0.2,1);
+  background: rgba(0,0,0,0.18);
+}
+.playlist.open {
+  max-height: 260px;
+  overflow-y: auto;
+}
+.playlist.open::-webkit-scrollbar { width: 4px; }
+.playlist.open::-webkit-scrollbar-track { background: transparent; }
+.playlist.open::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 2px; }
+
+.playlist-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+.playlist-count { font-weight: 400; }
+
+.playlist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  transition: background 0.2s;
+}
+.playlist-item:hover { background: rgba(255,255,255,0.08); }
+.playlist-item.playing { background: rgba(255,255,255,0.12); }
+
+.track-num {
+  font-size: 0.7rem;
+  opacity: 0.5;
+  min-width: 16px;
+  text-align: center;
+  color: #1db954;
+}
+.playlist-item.playing .track-num { color: #1db954; font-size: 0.85rem; }
+
+.track-info { flex: 1; }
+.track-name   { font-size: 0.78rem; font-weight: 600; line-height: 1.3; }
+.track-artist { font-size: 0.68rem; opacity: 0.55; margin-top: 1px; }
+
+/* ses dalgası animasyonu */
+.sound-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.sound-bars span {
+  display: block;
+  width: 3px;
+  background: #1db954;
+  border-radius: 2px;
+  animation: soundWave 0.8s ease-in-out infinite;
+}
+.sound-bars span:nth-child(1) { height: 40%; animation-delay: 0s; }
+.sound-bars span:nth-child(2) { height: 80%; animation-delay: 0.15s; }
+.sound-bars span:nth-child(3) { height: 55%; animation-delay: 0.3s; }
+.sound-bars span:nth-child(4) { height: 90%; animation-delay: 0.45s; }
+
+@keyframes soundWave {
+  0%, 100% { transform: scaleY(0.4); }
+  50%       { transform: scaleY(1); }
+}
+
+
+
+.spotify-btn svg {
+  width: 11px; height: 11px; fill: #fff;
+}
+
+
+
+
+
+
+
+
+/* ── ENERJİ ÇUBUĞU ── */
+#energy-bar-wrap {
+  position: fixed;
+  left: 14px;
+  right: auto;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 997;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+#energy-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.65;
+  color: inherit;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+}
+
+#energy-track {
+  width: 6px;
+  height: 180px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(255,255,255,0.25);
+}
+
+#energy-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.6) 100%);
+  border-radius: 10px;
+  transition: height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  height: 100%;
+}
+
+#energy-pct {
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: inherit;
+  opacity: 0.75;
+  letter-spacing: 0.02em;
+}
+
+#energy-icon {
+  font-size: 1rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+/* ── KOYU/AÇIK MOD TOGGLE ── */
+#theme-toggle {
+  position: fixed;
+  top: 16px;
+  right: 70px;
+  z-index: 1000;
+  background: rgba(255,255,255,0.20);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 50px;
+  padding: 7px 14px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  line-height: 1;
+}
+#theme-toggle:hover {
+  background: rgba(255,255,255,0.35);
+  transform: scale(1.08);
+}
+
+/* Koyu mod genel */
+body.dark-theme {
+  color: rgba(220, 230, 255, 0.92) !important;
+}
+
+/* Koyu modda renk zone'lardan geliyor, overlay filtresi yok */
+
+body.dark-theme .card {
+  background: rgba(10, 10, 30, 0.55) !important;
+  border-color: rgba(255,255,255,0.15) !important;
+}
+body.dark-theme .card:hover {
+  background: rgba(20, 20, 50, 0.70) !important;
+}
+body.dark-theme .card-detail-inner {
+  border-top-color: rgba(255,255,255,0.12) !important;
+}
+body.dark-theme #sticky-clock,
+body.dark-theme .mode-badge,
+body.dark-theme .side-btn,
+body.dark-theme #theme-toggle,
+body.dark-theme .mobile-switch button {
+  background: rgba(10,10,30,0.45) !important;
+  border-color: rgba(255,255,255,0.20) !important;
+}
+body.dark-theme .notebook {
+  background: #0d1117 !important;
+  color: #c9d1d9 !important;
+  border-color: #30363d !important;
+}
+body.dark-theme .thought-bubble {
+  background: rgba(20,20,50,0.92) !important;
+  color: rgba(200,210,255,0.90) !important;
+}
+body.dark-theme .thought-bubble::before {
+  border-color: transparent transparent rgba(20,20,50,0.92) transparent !important;
+}
+
+/* ── SPİKE ANİMASYONU ── */
+.spike-widget {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.spike-btn {
+  background: rgba(255,50,50,0.18);
+  border: 2px solid rgba(255,80,80,0.45);
+  border-radius: 10px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.2s ease;
+  color: inherit;
+  position: relative;
+  overflow: visible;
+}
+.spike-btn:hover {
+  background: rgba(255,50,50,0.30);
+  border-color: rgba(255,80,80,0.70);
+  transform: scale(1.05);
+}
+.spike-btn.armed {
+  animation: spikeArmed 0.5s ease-in-out infinite alternate;
+  border-color: rgba(255,50,50,0.9);
+  background: rgba(255,30,30,0.30);
+}
+@keyframes spikeArmed {
+  from { box-shadow: 0 0 8px rgba(255,50,50,0.4); }
+  to   { box-shadow: 0 0 22px rgba(255,50,50,0.9); }
+}
+
+.spike-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.spike-status {
+  font-size: 0.68rem;
+  font-weight: 600;
+  opacity: 0.65;
+  letter-spacing: 0.04em;
+  min-height: 16px;
+  transition: all 0.3s;
+}
+
+/* Patlama efekti */
+.explosion {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  font-size: 2.5rem;
+  animation: explodeOut 0.9s ease-out forwards;
+}
+@keyframes explodeOut {
+  0%   { transform: translate(-50%,-50%) scale(0.3); opacity: 1; }
+  60%  { transform: translate(-50%,-50%) scale(1.4); opacity: 0.9; }
+  100% { transform: translate(-50%,-50%) scale(2.2); opacity: 0; }
+}
+
+.explosion-text {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #ff4444;
+  text-shadow: 0 0 12px rgba(255,50,50,0.8);
+  animation: textPop 1.4s ease-out forwards;
+  white-space: nowrap;
+}
+@keyframes textPop {
+  0%   { transform: translate(-50%,-50%) scale(0.5); opacity: 0; }
+  20%  { transform: translate(-50%,-70%) scale(1.1); opacity: 1; }
+  80%  { transform: translate(-50%,-90%) scale(1.0); opacity: 1; }
+  100% { transform: translate(-50%,-120%) scale(0.9); opacity: 0; }
+}
+
+/* Parçacıklar */
+.particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: particleFly 0.8s ease-out forwards;
+}
+@keyframes particleFly {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ── TERMİNAL ── */
+#terminal {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 140px;
+  background: rgba(10, 12, 20, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(0, 255, 100, 0.25);
+  z-index: 500;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  overflow: hidden;
+  padding: 8px 16px 6px;
+  transition: height 0.3s ease;
+}
+#terminal:hover { height: 240px; }
+
+#terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  opacity: 0.6;
+}
+#terminal-header .t-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.t-dot.red    { background: #ff5f57; }
+.t-dot.yellow { background: #febc2e; }
+.t-dot.green  { background: #28c840; }
+#terminal-title {
+  font-size: 0.65rem;
+  color: #aaa;
+  letter-spacing: 0.06em;
+}
+
+#terminal-body {
+  height: calc(100% - 22px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,255,100,0.2) transparent;
+}
+#terminal-body::-webkit-scrollbar { width: 3px; }
+#terminal-body::-webkit-scrollbar-thumb { background: rgba(0,255,100,0.2); }
+
+.t-line {
+  line-height: 1.9;
+  white-space: pre;
+  animation: tLineFade 0.6s ease-out;
+}
+@keyframes tLineFade {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.t-log     { color: #7fffb2; }
+.t-warn    { color: #ffd060; }
+.t-error   { color: #ff6060; }
+.t-event   { color: #60c8ff; }
+.t-system  { color: #cc88ff; }
+.t-error   { color: #ff4444; font-weight: 700; }
+.t-cursor  { color: #7fffb2; animation: blink 1s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+::-webkit-scrollbar          { width: 5px; }
+::-webkit-scrollbar-track    { background: transparent; }
+::-webkit-scrollbar-thumb    { background: rgba(255,255,255,0.28); border-radius: 3px; }
+
+/* ── MOBİL ──────────────────────────────────────────────────── */
+.mobile-switch {
+  display: none;
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999;
+  gap: 10px;
+}
+
+.mobile-switch button {
+  background: rgba(255, 255, 255, 0.20);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 50px;
+  padding: 10px 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: inherit;
+  transition: background var(--ui-speed);
+}
+
+.mobile-switch button.active {
+  background: rgba(255, 255, 255, 0.40);
+}
+
+@media (max-width: 640px) {
+  .timeline::before  { left: 22px; }
+
+  .time-block,
+  .time-block:nth-child(even) {
+    flex-direction: column;
+  }
+
+  .time-label-wrap,
+  .time-block:nth-child(even) .time-label-wrap {
+    width: 100%;
+    padding-left: 52px;
+    padding-right: 14px;
+    align-items: flex-start;
+  }
+
+  .card-wrap {
+    width: 100%;
+    padding-left: 52px;
+    padding-right: 14px;
+    margin-top: 10px;
+  }
+
+  .dot { left: 22px; }
+
+  .side-btn      { display: none; }
+  .mobile-switch { display: flex; }
+}
+
+  </style>
+</head>
+<body>
+
+  <div id="progress-bar"></div>
+  <div id="energy-bar-wrap">
+    <span id="energy-icon">⚡</span>
+    <div id="energy-track">
+      <div id="energy-fill"></div>
+    </div>
+    <span id="energy-pct">100%</span>
+    <span id="energy-label">Enerji</span>
+  </div>
+  <canvas id="stars-canvas"></canvas>
+
+  <!-- Gradient overlay — JS tarafından renk interpolasyonu için -->
+  <div id="bg-overlay"></div>
+
+  <button id="theme-toggle" onclick="toggleTheme()" title="Koyu/Açık Mod">🌞</button>
+  <div id="sticky-clock">☀️ 07:30 — Sabah</div>
+
+  <!-- Sol / Sağ butonlar -->
+  <button class="side-btn" id="btn-left"  onclick="setMode('weekday')">
+    <span class="arrow">◀</span>
+    <span class="label">Hafta İçi</span>
+  </button>
+  <button class="side-btn" id="btn-right" onclick="setMode('weekend')">
+    <span class="arrow">▶</span>
+    <span class="label">Hafta Sonu</span>
+  </button>
+
+  <!-- Mobil geçiş -->
+  <div class="mobile-switch">
+    <button id="mob-weekday" class="active" onclick="setMode('weekday')">📅 Hafta İçi</button>
+    <button id="mob-weekend"               onclick="setMode('weekend')">🌿 Hafta Sonu</button>
+  </div>
+
+  <main>
+    <header>
+      <span class="mode-badge"  id="mode-badge">📅 HAFTA İÇİ</span>
+      <span class="day-icon"    id="day-icon">☀️</span>
+      <h1 id="main-title">Bir Günümde <span>Ben</span></h1>
+      <p  id="header-sub" class="header-sub">
+        Odaklanma ve Gelişim Günü — Rutin, projeler, öğrenme süreci ve zihinsel yoğunluk üzerine bir gün.
+      </p>
+      <p class="scroll-hint">↓ aşağı kaydır</p>
+    </header>
+
+    <div class="timeline timeline-panel" id="timeline">
+      <!-- JS tarafından doldurulur -->
+    </div>
+  </main>
+
+  <div id="terminal">
+  <div id="terminal-header">
+    <span class="t-dot red"></span>
+    <span class="t-dot yellow"></span>
+    <span class="t-dot green"></span>
+    <span id="terminal-title">system@bir-gunum-ben ~ bash</span>
+  </div>
+  <div id="terminal-body">
+    <div class="t-line t-system">$ ./gun_baslatici.sh --mode=hafta_ici</div>
+    <div class="t-line t-log">[sistem] Başlatılıyor... ✓</div>
+    <div class="t-line t-cursor">▌</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   BİR GÜNÜMDE BEN  —  script.js
+   ═══════════════════════════════════════════════════════════════ */
+
+'use strict';
+
+/* ── VERİ ─────────────────────────────────────────────────────────────────── */
+
+/**
+ * Her bloğun renk zonu: 0-5 arası bir indeks.
+ * Renkler ZONES dizisinde tanımlanıyor;
+ * geçişler JS interpolasyon fonksiyonu ile yumuşatılıyor.
+ */
+const ZONES = [
+  { start: [166, 241, 255], end: [180, 245, 255] },  // 0  #A6F1FF  Sabah Mavisi
+  { start: [220, 235, 200], end: [230, 238, 180] },  // 1  Ara: Mavi→Yeşilimsi
+  { start: [245, 229,  54], end: [240, 220,  40] },  // 2  #F5E536  Sarı
+  { start: [250, 195,  30], end: [248, 175,  20] },  // 3  Ara: Sarı→Turuncu
+  { start: [252, 149,  18], end: [245, 130,  10] },  // 4  #FC9512  Turuncu
+  { start: [238, 100,  15], end: [228,  75,  12] },  // 5  Ara: Turuncu→Kızıl
+  { start: [212,  43,  15], end: [195,  30,   8] },  // 6  #D42B0F  Kırmızı
+  { start: [130,  25,  60], end: [100,  15,  85] },  // 7  Ara: Kırmızı→Mor
+  { start: [ 46,   6, 112], end: [ 30,   2,  80] },  // 8  #2E0670  Lacivert
+];
+
+// Hafta sonu zone renkleri
+const ZONES_WEEKEND = [
+  { start: [104, 215, 252], end: [ 80, 200, 240] },  // 0  #68D7FC  Sabah Mavisi
+  { start: [172, 235, 150], end: [200, 248, 100] },  // 1  Ara: Mavi→Sarı
+  { start: [240, 255,  64], end: [230, 245,  50] },  // 2  #F0FF40  Sarı
+  { start: [235, 185,  30], end: [232, 150,  10] },  // 3  Ara: Sarı→Turuncu
+  { start: [227, 116,   0], end: [210, 100,   0] },  // 4  #E37400  Turuncu
+  { start: [245,  90,  40], end: [238,  70,  30] },  // 5  Ara: Turuncu→Kırmızı
+  { start: [255,  88,  61], end: [240,  65,  40] },  // 6  #FF583D  Kırmızı-Turuncu
+  { start: [150,  45,  90], end: [100,  20,  95] },  // 7  Ara: Kırmızı→Mor
+  { start: [ 46,   6, 112], end: [ 30,   2,  80] },  // 8  #2E0670  Lacivert
+];
+
+const WEEKDAY = [
+  {
+    time: '07:30', phase: 'Uyanış & Koşturmaca',
+    zone: 0, emoji: '🚌',
+    title: 'Sabah Ritüeli',
+    subtitle: 'Açık Mavi / Sabah Sisi',
+    activity: "Alarm çalar. Kahvaltıya vakit yok! Dolaptan en rahat sweatshirt'ü kapıp okula gitmek için jet hızıyla hazırlanma.",
+    thought: 'Otobüsü kaçırırsam ilk dersin yoklaması patlar...'
+  },
+  {
+    time: '09:00', phase: 'Sabah Dersleri',
+    zone: 1, emoji: '🏛️',
+    title: 'Kampüs Işığında Ders',
+    subtitle: 'Aydınlık Kampüs Işığı',
+    activity: 'Sınıfta yer kapma. Teorik dersler, tahtayı dolduran formüller, programlama veya mantıksal devre şemaları.',
+    thought: 'Hoca slaytı çok hızlı geçiyor, yetişemiyorum!'
+  },
+  {
+    time: '12:15', phase: 'Öğle Yemeği Vakti',
+    zone: 2, emoji: '🍽️',
+    title: 'Öğle Yemeği Vakti',
+    subtitle: 'Canlı Öğle Güneşi / Sıcak Sarı',
+    activity: 'Dersten çıkar çıkmaz yemekhaneye doğru depar. Arkadaşlarla muhabbet etme. Belki biraz bilgi alış-verişi :)',
+    thought: 'Bakalım bugün yemekte ne var, umarım et yemeği vardır.'
+  },
+  {
+    time: '13:00', phase: 'Yemek Sonrası Mola',
+    zone: 3, emoji: '🧋',
+    title: 'Ferahlama Zamanı',
+    subtitle: 'Ferah Limon Sarısı',
+    activity: 'Yemek sonrası o bitirici hamle: Yoğun, mis gibi bir kahve ya da belki bir limonata molası.',
+    thought: 'Şimdi bir kahve içmezsem öğleden sonraki derste gözlerim kapanır. Muhakkak bir bardak kahve içmem lazım. (Uyku hali bahanesi, kahve bağımlılığı işte böyle bir şey.)'
+  },
+  {
+    time: '13:30', phase: 'Öğleden Sonraki Dersler',
+    zone: 4, emoji: '🖥️',
+    title: 'Laboratuvar Zamanı',
+    subtitle: 'Gündüz Işığı / Canlı Mavi',
+    activity: "Sınıfa giriş. Bilgisayarlar açılır, IDE'ler çalıştırılır. PyQt5 arayüz tasarımları, SQLite veri tabanı oluşturma ya da internet sayfası hazırlama zamanı. Terminaldeki kırmızı hata satırlarıyla mücadele.",
+    thought: 'Syntax error mu? Noktalı virgülü nereye unuttum yine?'
+  },
+  {
+    time: '16:30', phase: 'Eve Dönüş & Akşam Yemeği',
+    zone: 5, emoji: '🚌',
+    title: 'Günün Sonu',
+    subtitle: 'Yumuşak Gün Batımı / Turuncu',
+    activity: 'Kampüsten çıkış, eve varış ve günün yorgunluğunu unutturan sıcak bir akşam yemeği. Ve ardından bir bardak kahve.',
+    thought: 'Evin konforu gibisi yok. Karnım doyduğuna göre ve kahveler içildiğine göre şimdi ders çalışma zamanı.'
+  },
+  {
+    time: '18:00', phase: 'Dizi / Film Zamanı',
+    zone: 6, emoji: '🎬',
+    title: 'Dizi & Film',
+    subtitle: 'Akşam Kızıllığı / Kırmızı',
+    activity: 'Arkaya yaslanıp sevilen bir dizinin ya da filmin yeni bölümünü izleme vakti. Ekrandan tamamen uzaklaşmasa da zihnen uzaklaşma saati.',
+    thought: 'Sadece bir bölüm daha izleyeyim, hemen kalkacağım. (Yalan söyledi. Maalesef izlediği filmin ya da dizinin başından kalkamadı.)'
+  },
+  {
+    time: '19:30', phase: 'Ders Çalışma & Kodlama',
+    zone: 7, emoji: '📟',
+    title: 'Ders Çalışma & Kod',
+    subtitle: 'Derin Lacivert',
+    activity: 'Mühendislik kimliğine geri dönüş zamanı. Günün derslerini tekrar etme, yarım kalan projeleri tamamlamaya uğraşma ve kodları temizleme/ayıklama.',
+    thought: 'Şurayı da yazayım, şurayı da düzelteyim, şunu da ekleyeyim. (Her seferinde aklına yeni fikirler, yeni güncellemeler geldiği için bir türlü başından kalkamadı.)'
+  },
+  {
+    time: '22:30', phase: 'Gaming Seansı',
+    zone: 8, emoji: '🎮',
+    title: 'Gaming Seansı',
+    subtitle: 'Dinamik Neon Tonları',
+    activity: 'Kulaklıklar takılır, oyun açılır. Arkadaşlarla ya da solo taktiksel bir FPS maçına (özellikle Valorant ya da CS) giriş. Taktiksel çağrılar ve rekabetin zirve yaptığı o anlar.',
+    thought: 'Allaaaah! İşte gerçek eğlence. (5 dk sonra: Spike oraya mı kurulur, adam gözünün önünde, bıktım bu trollerden bırakacağım bu oyunu. Dipnot: O bir FPS oyun sevdalısı olduğundan dediğini asla yapamadı. Hala oynamaya devam ediyor.)'
+  },
+  {
+    time: '00:00', phase: 'Günü Kapatma Zamanı',
+    zone: 8, emoji: '🌑',
+    title: 'Gece Kapanışı',
+    subtitle: 'Gece Siyahı / Derin Gece Mavisi',
+    activity: 'Kod editörleri ve oyunlar kapatılır. Artık yatma zamanıdır. Zihni dinlendirmek ve kolayca uykuya geçebilmek için birkaç sayfa kitap okuma ve uyku.',
+    thought: 'System.log: Gözler kapatılıyor. Uyku moduna geçildi. Uyku modu aktif...'
+  },
+];
+
+const WEEKEND = [
+  {
+    time: '09:30', phase: 'Acelesiz Uyanış & Kahvaltı',
+    zone: 0, emoji: '🍳',
+    title: 'Hafta Sonu Sabahı',
+    subtitle: 'Yumuşak Sarı / Pastel Tonlar',
+    activity: 'Hafta içi gibi aceleyle evden çıkmak yok. Güzel, keyifli bir kahvaltıyla güne başlama. Kahvaltı sonrası özenle hazırlanmış bir kahve ile güne başlama.',
+    thought: 'Bugün acelemiz yok, zaman benim tarafımda.'
+  },
+  {
+    time: '11:00', phase: 'Odaklanma Seansı',
+    zone: 2, emoji: '💻',
+    title: 'Kişisel Gelişim & Ders',
+    subtitle: 'Aydınlık Gündüz Işığı',
+    activity: 'Zihin henüz tazeyken bilgisayar başına geçiş. Python projeleri, PyQt5 arayüz geliştirmeleri, laboratuvar raporları ya da internet programlama dersinin sakin bir kafayla genel tekrarı.',
+    thought: 'Sessiz ortamda kod yazmak çok daha keyifli.'
+  },
+  {
+    time: '14:00', phase: 'Temiz Hava: Yürüyüş & Deşarj',
+    zone: 2, emoji: '👟',
+    title: 'Temiz Hava',
+    subtitle: 'Doğa Yeşili / Canlı Mavi',
+    activity: 'Saatlerce bilgisayar başında oturmanın getirdiği yorgunluğu atmak için kulaklıkları takıp dışarı çıkış. Parkta tempolu bir yürüyüş.',
+    thought: 'Zihni boşaltmanın ve ekrandan uzaklaşmanın tam zamanı.'
+  },
+  {
+    time: '16:00', phase: 'Alışveriş',
+    zone: 3, emoji: '🛍️',
+    title: 'Alışveriş Vakti',
+    subtitle: 'Sıcak Akşamüstü Tonları / Karamel',
+    activity: 'Alışverişe çıkış. İhtiyaçları giderme, mağazaları gezme, belki de hobiler için küçük alışverişler (yeni bir kitap veya kahve çekirdeği almak gibi).',
+    thought: 'Küçük bir alışveriş terapisi her zaman iyi gelir.'
+  },
+  {
+    time: '18:30', phase: 'Akşam Yemeği',
+    zone: 4, emoji: '🍲',
+    title: 'Akşam Yemeği',
+    subtitle: 'Yumuşak Gün Batımı / Sıcak Turuncu',
+    activity: 'Eve dönüş ve güzel bir akşam yemeğiyle enerjiyi toplama.',
+    thought: 'Yemek yemenin enerji verdiğini kim söyledi? Tamamen yalan, üzerime bir ağırlık çöktü. Kahve yapayım bari.'
+  },
+  {
+    time: '20:00', phase: 'Ekiple Rekabet: Oyun Zamanı',
+    zone: 6, emoji: '🎮',
+    title: 'Gaming Seansı',
+    subtitle: 'Dinamik Neon Tonları',
+    activity: 'Arkadaşlarla ya da solo FPS oyunu oynama ve dereceli maça giriş. Taktikler, troller, heyecanlı clutch anları, belalar ve tam bir rekabet ortamı.',
+    thought: 'Spike yerleştirildi, eli aldık. Bu maç buradan dönmez. 9-3, son 5 sayıyı da aldık mı maç bizde. Aldık bu maçı! (Dipnot: 10 dk sonra maçı sattıkları için ya da AFK olduğu için kaybetti.)'
+  },
+  {
+    time: '22:30', phase: 'Gece Sineması',
+    zone: 7, emoji: '🎬',
+    title: 'Dizi & Film',
+    subtitle: 'Derin Lacivert',
+    activity: 'Işıkları kapatıp arkaya yaslanma. Sevilen bir dizinin yeni bölümünü veya güzel bir filmi izleyerek günün tüm yorgunluğunu geride bırakma.',
+    thought: 'Günü böyle kapatmak çok iyi. Oyunda yeterince stres yüklendi. Biraz da stres atma zamanı :)'
+  },
+  {
+    time: '00:30', phase: 'Kapanış & Uyku',
+    zone: 8, emoji: '🌑',
+    title: 'Gece Kapanışı',
+    subtitle: 'Gece Siyahı / Derin Gece Mavisi',
+    activity: 'Ekranlar kapanır, zihin dinlenmeye çekilir.',
+    thought: 'System.status: Bataryalar dolduruluyor. Yeni güne hazır...'
+  },
+];
+
+const CLOCK_LABELS = {
+  weekday: [
+    ['🚌', '07:30 — Uyanış'],
+    ['🏛️', '09:00 — Sabah Dersleri'],
+    ['🍽️', '12:15 — Öğle Yemeği'],
+    ['🧋', '13:00 — Ferahlama'],
+    ['🖥️', '13:30 — Öğleden Sonra'],
+    ['🚌', '16:30 — Eve Dönüş'],
+    ['🎬', '18:00 — Dizi & Film'],
+    ['📟', '19:30 — Ders & Kod'],
+    ['🎮', '22:30 — Gaming'],
+    ['🌑', '00:00 — Kapanış'],
+  ],
+  weekend: [
+    ['🍳', '09:30 — Kahvaltı'],
+    ['💻', '11:00 — Odaklanma'],
+    ['👟', '14:00 — Yürüyüş'],
+    ['🛍️', '16:00 — Alışveriş'],
+    ['🍲', '18:30 — Akşam Yemeği'],
+    ['🎮', '20:00 — Gaming'],
+    ['🎬', '22:30 — Sinema'],
+    ['🌑', '00:30 — Kapanış'],
+  ],
+};
+
+/* ── DURUM ────────────────────────────────────────────────────────────────── */
+let currentMode     = 'weekday';
+let currentZoneIdx  = -1;   // -1: henüz ayarlanmadı
+let targetRGB       = null; // { start:[r,g,b], end:[r,g,b] }
+let currentRGB      = null;
+let rafId           = null;
+let isNight         = false;
+
+/* ── YILDIZ ANİMASYONU ────────────────────────────────────────────────────── */
+const canvas = document.getElementById('stars-canvas');
+const ctx    = canvas.getContext('2d');
+let   stars  = [];
+
+function resizeCanvas() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+function initStars() {
+  stars = Array.from({ length: 130 }, () => ({
+    x:     Math.random() * canvas.width,
+    y:     Math.random() * canvas.height,
+    r:     Math.random() * 1.6 + 0.3,
+    phase: Math.random() * Math.PI * 2,
+    speed: Math.random() * 0.005 + 0.002,
+  }));
+}
+
+function drawStars() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  stars.forEach(s => {
+    s.phase += s.speed;
+    const alpha = 0.25 + Math.abs(Math.sin(s.phase)) * 0.65;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(220, 225, 255, ${alpha})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(drawStars);
+}
+
+resizeCanvas();
+initStars();
+drawStars();
+window.addEventListener('resize', () => { resizeCanvas(); initStars(); });
+
+/* ── RENK YARDIMCILARI ────────────────────────────────────────────────────── */
+
+/**
+ * İki RGB dizisi arasında t (0-1) oranında lineer interpolasyon.
+ */
+function lerpColor(a, b, t) {
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t),
+  ];
+}
+
+/**
+ * #bg-overlay'e yumuşak gradient uygula.
+ * RAF döngüsüyle currentRGB → targetRGB'ye easing ile ilerler.
+ */
+function applyBackground(startRGB, endRGB) {
+  const overlay = document.getElementById('bg-overlay');
+  const s = startRGB.join(',');
+  const e = endRGB.join(',');
+  overlay.style.background = `linear-gradient(160deg, rgb(${s}) 0%, rgb(${e}) 100%)`;
+}
+
+const LERP_SPEED = 0.028; // küçüldükçe daha yavaş / yumuşak geçiş
+
+function animateBackground() {
+  if (!currentRGB || !targetRGB) return;
+
+  const newStart = lerpColor(currentRGB.start, targetRGB.start, LERP_SPEED);
+  const newEnd   = lerpColor(currentRGB.end,   targetRGB.end,   LERP_SPEED);
+
+  currentRGB.start = newStart;
+  currentRGB.end   = newEnd;
+
+  applyBackground(newStart, newEnd);
+
+  const doneStart = newStart.every((v, i) => Math.abs(v - targetRGB.start[i]) < 1);
+  const doneEnd   = newEnd.every(  (v, i) => Math.abs(v - targetRGB.end[i])   < 1);
+
+  if (doneStart && doneEnd) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  } else {
+    rafId = requestAnimationFrame(animateBackground);
+  }
+}
+
+function transitionToZone(zoneIdx) {
+  let zoneSet;
+  if (isDarkTheme) {
+    zoneSet = currentMode === 'weekend' ? ZONES_DARK_WEEKEND : ZONES_DARK_WEEKDAY;
+  } else {
+    zoneSet = currentMode === 'weekend' ? ZONES_WEEKEND : ZONES;
+  }
+  const zone = zoneSet[zoneIdx];
+
+  if (!currentRGB) {
+    currentRGB = { start: [...zone.start], end: [...zone.end] };
+    applyBackground(currentRGB.start, currentRGB.end);
+    return;
+  }
+
+  targetRGB = { start: [...zone.start], end: [...zone.end] };
+
+  if (!rafId) rafId = requestAnimationFrame(animateBackground);
+}
+
+/* ── YILDIZ GÖRÜNÜRLÜKLERİ ───────────────────────────────────────────────── */
+function setNightMode(night) {
+  if (night === isNight) return;
+  isNight = night;
+  canvas.classList.toggle('visible', night);
+}
+
+/* ── METİN RENK UYUMU ────────────────────────────────────────────────────── */
+function updateTextColor(zoneIdx) {
+  // Zone 4-5 (gece) koyu arka plan → açık metin
+  const dark = zoneIdx >= 4;
+  document.body.style.color = dark
+    ? 'rgba(232, 234, 246, 0.92)'
+    : 'rgba(28, 30, 46, 0.90)';
+}
+
+/* ── TİMELINE OLUŞTURMA ───────────────────────────────────────────────────── */
+function buildTimeline(data) {
+  const container = document.getElementById('timeline');
+
+  // Her yeni timeline'da log durumunu sıfırla
+  lastLoggedTime = null;
+
+  // soluklaştır
+  container.classList.add('fading');
+
+  setTimeout(() => {
+    container.innerHTML = '';
+
+    data.forEach((block, i) => {
+      const div = document.createElement('div');
+      div.className   = 'time-block';
+      div.dataset.zone = block.zone;
+
+      div.innerHTML = `
+        <div class="time-label-wrap">
+          <span class="time-label">${block.time}</span>
+          <span class="time-phase">${block.phase}</span>
+        </div>
+
+        <div class="dot"></div>
+
+        <div class="card-wrap">
+          <div class="card" role="button" tabindex="0" aria-expanded="false">
+            <div class="card-header">
+              <span class="card-emoji" style="${
+              (block.time === '07:30') ? 'display:inline-block;transform:scaleX(1)' :
+              (block.time === '16:30') ? 'display:inline-block;transform:scaleX(-1)' : ''
+            }">${block.emoji}</span>
+              <div>
+                <div class="card-title">${block.title}</div>
+                <div class="card-subtitle">${block.subtitle}</div>
+              </div>
+              <span class="card-chevron" aria-hidden="true">▾</span>
+            </div>
+            <div class="card-detail" role="region">
+              <div class="card-detail-inner">
+                <div class="detail-row">
+                  <div class="detail-label">🎯 Etkinlik</div>
+                  <div class="detail-text">${block.activity}</div>
+                </div>
+                <div class="detail-row">
+                  <div class="detail-label">💭 Hissiyat / Düşünce</div>
+                  <div class="thought-text">${block.thought}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // kart aç/kapat
+      const card = div.querySelector('.card');
+      card.addEventListener('click', () => toggleCard(card));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') toggleCard(card);
+      });
+
+      // Widget enjeksiyonu
+      injectWidgets(div, block, i);
+      container.appendChild(div);
+    });
+
+    container.classList.remove('fading');
+    observeBlocks();
+    // Her zaman sayfanın en üstüne smooth scroll
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 380);
+
+    // zona sıfırla
+    currentZoneIdx = -1;
+    updateZoneFromScroll();
+
+  }, 360);
+}
+
+/* ── KART AÇ / KAPAT ─────────────────────────────────────────────────────── */
+/* ── WIDGET ENJEKSİYONLARI ── */
+function injectWidgets(div, block, idx) {
+  const detailInner = div.querySelector('.card-detail-inner');
+  if (!detailInner) return;
+
+  // --- OTOBÜS (07:30 sabah ritüeli) ---
+  if (block.time === '07:30') {
+    const busWidget = document.createElement('div');
+    busWidget.id = 'bus-widget';
+    busWidget.innerHTML = '<span id="bus-icon">🚌</span>';
+    detailInner.insertBefore(busWidget, detailInner.firstChild);
+    // animasyonu başlat
+    setTimeout(animateBus, 400);
+  }
+
+  // --- DÖNÜŞ OTOBÜSÜ (16:30 eve dönüş) ---
+  if (block.time === '16:30') {
+    const retBus = document.createElement('div');
+    retBus.id = 'return-bus-widget';
+    retBus.innerHTML = '<span id="return-bus-icon">🚌</span>';
+    detailInner.insertBefore(retBus, detailInner.firstChild);
+    setTimeout(animateReturnBus, 400);
+  }
+
+  // --- AYAK İZİ (14:00 yürüyüş — hafta sonu) ---
+  if (block.time === '14:00') {
+    const fpWidget = document.createElement('div');
+    fpWidget.id = 'footprint-widget';
+    detailInner.insertBefore(fpWidget, detailInner.firstChild);
+    setTimeout(animateFootprints, 400);
+  }
+
+  // --- NOT DEFTERİ (09:00 sabah dersleri) ---
+  if (block.time === '09:00') {
+    const nb = document.createElement('div');
+    nb.className = 'notebook';
+    nb.innerHTML = `
+      <div class="notebook-title">📓 Ders Notları</div>
+      <div class="notebook-line">▸ Programlama: Döngüler, Fonksiyonlar, OOP</div>
+      <div class="notebook-line">▸ Mantıksal Devre: AND, OR, NOT kapıları</div>
+      <div class="notebook-line">▸ Veri Tabanı: SQL sorguları, JOIN işlemleri</div>
+      <div class="notebook-line">▸ Diferansiyel Denklemler: ?????</div>
+    `;
+    detailInner.appendChild(nb);
+  }
+
+  // --- İÇECEK SEÇİCİ (13:00 ferahlama) ---
+  if (block.time === '13:00') {
+    const picker = document.createElement('div');
+    picker.className = 'drink-picker';
+
+    const lemonBtn = document.createElement('button');
+    lemonBtn.className = 'drink-btn lemon';
+    lemonBtn.textContent = '🍋 Limonata';
+    lemonBtn.addEventListener('click', () => pickDrink(lemonBtn, 'lemon', picker));
+
+    const coffeeBtn = document.createElement('button');
+    coffeeBtn.className = 'drink-btn coffee';
+    coffeeBtn.textContent = '☕ Kahve';
+    coffeeBtn.addEventListener('click', () => pickDrink(coffeeBtn, 'coffee', picker));
+
+    picker.appendChild(lemonBtn);
+    picker.appendChild(coffeeBtn);
+    detailInner.appendChild(picker);
+  }
+
+  // --- MÜZİK ÇALAR (14:00 açık hava molası) ---
+  if (block.time === '14:00') {
+    const player = document.createElement('div');
+    player.className = 'music-player';
+    player.innerHTML = `
+      <div class="music-toggle" id="music-toggle">
+        <span class="music-icon">🎧</span>
+        <span class="music-toggle-text">Yürüyüş Playlist'i</span>
+        <span class="music-arrow">▾</span>
+      </div>
+      <div class="playlist" id="playlist">
+        <div class="playlist-header">
+          <span>🎵 Yürüyüş Listem</span>
+          <span class="playlist-count">8 şarkı</span>
+        </div>
+        <div class="playlist-item playing">
+          <span class="track-num">▶</span>
+          <div class="track-info">
+            <div class="track-name">A Canım</div>
+            <div class="track-artist">Mabel Matiz</div>
+          </div>
+          <div class="sound-bars">
+            <span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="playlist-item">
+          <span class="track-num">2</span>
+          <div class="track-info">
+            <div class="track-name">Jarnana</div>
+            <div class="track-artist">Elveda Rumeli Jenerik</div>
+          </div>
+        </div>
+        <div class="playlist-item">
+          <span class="track-num">3</span>
+          <div class="track-info">
+            <div class="track-name">Ne Zamandır Sendeyim</div>
+            <div class="track-artist">Madrigal</div>
+          </div>
+        </div>
+        <div class="playlist-item">
+          <span class="track-num">4</span>
+          <div class="track-info">
+            <div class="track-name">Güneş</div>
+            <div class="track-artist">Can Bonomo</div>
+          </div>
+        </div>
+        <div class="playlist-item">
+          <span class="track-num">5</span>
+          <div class="track-info">
+            <div class="track-name">Nothing Breaks Like a Heart</div>
+            <div class="track-artist">Mark Ronson ft. Miley Cyrus</div>
+          </div>
+        </div>
+        <div class="playlist-item">
+          <span class="track-num">6</span>
+          <div class="track-info">
+            <div class="track-name">Revolution</div>
+            <div class="track-artist">The Score</div>
+          </div>
+        </div>
+        <div class="playlist-item">
+          <span class="track-num">7</span>
+          <div class="track-info">
+            <div class="track-name">Born For This</div>
+            <div class="track-artist">The Score</div>
+          </div>
+        </div>
+        <div class="playlist-item">
+          <span class="track-num">8</span>
+          <div class="track-info">
+            <div class="track-name">Softcore</div>
+            <div class="track-artist">The Neighbourhood</div>
+          </div>
+        </div>
+      </div>
+    `;
+    detailInner.appendChild(player);
+
+    // toggle tıklama
+    const toggle = player.querySelector('#music-toggle');
+    const playlistEl = player.querySelector('#playlist');
+    const arrow = player.querySelector('.music-arrow');
+
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = playlistEl.classList.contains('open');
+      playlistEl.classList.toggle('open', !isOpen);
+      arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+    });
+
+    // Şarkı seçme
+    player.querySelectorAll('.playlist-item').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // önceki çalanı sıfırla
+        player.querySelectorAll('.playlist-item').forEach(i => {
+          i.classList.remove('playing');
+          const bars = i.querySelector('.sound-bars');
+          if (bars) bars.remove();
+          const num = i.querySelector('.track-num');
+          if (num) num.textContent = num.dataset.num;
+        });
+        // yeni şarkıyı aktif yap
+        item.classList.add('playing');
+        const num = item.querySelector('.track-num');
+        if (num) num.textContent = '▶';
+        // ses dalgası ekle
+        const bars = document.createElement('div');
+        bars.className = 'sound-bars';
+        bars.innerHTML = '<span></span><span></span><span></span><span></span>';
+        item.appendChild(bars);
+      });
+    });
+
+    // data-num ata
+    player.querySelectorAll('.playlist-item').forEach((item, idx) => {
+      const num = item.querySelector('.track-num');
+      if (num) num.dataset.num = idx === 0 ? '▶' : String(idx + 1);
+    });
+  }
+
+  // --- KOD EDITÖRÜ (11:00 hafta sonu odaklanma) ---
+  if (block.time === '11:00') {
+    const editor = document.createElement('div');
+    editor.className = 'code-editor';
+    editor.innerHTML = `
+      <div class="editor-titlebar">
+        <span class="editor-dot red"></span>
+        <span class="editor-dot yellow"></span>
+        <span class="editor-dot green"></span>
+        <span class="editor-filename">main.py</span>
+      </div>
+      <div class="editor-body">
+        <div class="editor-line"><span class="ln">1</span><span class="kw">import</span> <span class="mod">PyQt5</span></div>
+        <div class="editor-line"><span class="ln">2</span><span class="kw">import</span> <span class="mod">sqlite3</span></div>
+        <div class="editor-line"><span class="ln">3</span></div>
+        <div class="editor-line"><span class="ln">4</span><span class="kw">def</span> <span class="fn">hafta_sonu_modu</span>():</div>
+        <div class="editor-line"><span class="ln">5</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># Sessiz ortam = verimli kod</span></div>
+        <div class="editor-line"><span class="ln">6</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">print</span>(<span class="str">"Bugün odak modu açık 🎯"</span>)</div>
+        <div class="editor-line"><span class="ln">7</span></div>
+        <div class="editor-line"><span class="ln">8</span><span class="fn">hafta_sonu_modu</span>()</div>
+      </div>
+    `;
+    detailInner.appendChild(editor);
+  }
+
+  // --- SPİKE WİDGET (gaming saatleri) ---
+  if ((block.time === '22:30' && currentMode === 'weekday') || (block.time === '20:00' && currentMode === 'weekend')) {
+    const spikeWrap = document.createElement('div');
+    spikeWrap.className = 'spike-widget';
+    spikeWrap.innerHTML = `
+      <div class="spike-label">⚠️ Spike Aktif</div>
+      <button class="spike-btn" id="spike-btn-${block.time.replace(':','')}">
+        💣 <span>Spike'a Bas!</span>
+      </button>
+      <div class="spike-status" id="spike-status-${block.time.replace(':','')}">Spike yerleştirildi — imha et!</div>
+    `;
+    detailInner.appendChild(spikeWrap);
+
+    const btn    = spikeWrap.querySelector('.spike-btn');
+    const status = spikeWrap.querySelector('.spike-status');
+    let phase = 0; // 0=yerleştirildi, 1=silahlandı, 2=imha
+
+    let spikeTimer   = null;
+    let holdTimer    = null;
+    let holdInterval = null;
+    let holdProgress = 0;
+
+    function resetSpike() {
+      clearTimeout(spikeTimer);
+      clearTimeout(holdTimer);
+      clearInterval(holdInterval);
+      spikeTimer = holdTimer = holdInterval = null;
+      holdProgress = 0;
+      phase = 0;
+      btn.classList.remove('armed');
+      btn.querySelector('span').textContent = "Spike'a Bas!";
+      status.textContent = 'Spike yerleştirildi — imha et!';
+      btn.style.background = '';
+    }
+
+    function spikeExplodeFail() {
+      clearTimeout(holdTimer);
+      clearInterval(holdInterval);
+      btn.classList.remove('armed');
+      btn.querySelector('span').textContent = '💥 Patladı!';
+      status.textContent = '💥 Spike patladı! Tur kaybedildi...';
+      const rect = btn.getBoundingClientRect();
+      triggerExplosionParticles(rect.left + rect.width/2, rect.top + rect.height/2, true);
+      triggerBigExplosion(rect.left + rect.width/2, rect.top + rect.height/2, true);
+      setTimeout(() => resetSpike(), 2500);
+    }
+
+    // 1. tık — spike kuruldu
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (phase === 0) {
+        phase = 1;
+        btn.classList.add('armed');
+        btn.querySelector('span').textContent = '3sn basılı tut!';
+        status.textContent = '🔴 Spike kuruldu — 7sn içinde imha et!';
+        triggerExplosionParticles(e.clientX, e.clientY, false);
+        spikeTimer = setTimeout(() => spikeExplodeFail(), 7000);
+      }
+    });
+
+    // 3 sn basılı tut — imha
+    btn.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      if (phase !== 1) return;
+      holdProgress = 0;
+      btn.querySelector('span').textContent = '⏳ İmha ediliyor...';
+      holdInterval = setInterval(() => {
+        holdProgress += 100;
+        const pct = Math.min((holdProgress / 3000) * 100, 100);
+        btn.style.background = `linear-gradient(90deg, rgba(0,200,80,0.45) ${pct}%, rgba(255,50,50,0.18) ${pct}%)`;
+        status.textContent = `⏳ İmha ediliyor... %${Math.round(pct)}`;
+      }, 100);
+      holdTimer = setTimeout(() => {
+        clearInterval(holdInterval);
+        clearTimeout(spikeTimer);
+        phase = 2;
+        btn.classList.remove('armed');
+        btn.style.background = '';
+        btn.querySelector('span').textContent = '✅ İmha!';
+        status.textContent = '✅ Spike imha edildi! Tur bizde!';
+        triggerExplosionParticles(e.clientX, e.clientY, true);
+        triggerBigExplosion(e.clientX, e.clientY, false);
+        setTimeout(() => resetSpike(), 2500);
+      }, 3000);
+    });
+
+    // Bırakınca iptal
+    btn.addEventListener('mouseup',   (e) => { e.stopPropagation(); if (phase===1 && holdTimer) { clearTimeout(holdTimer); clearInterval(holdInterval); btn.style.background=''; btn.querySelector('span').textContent='3sn basılı tut!'; status.textContent='🔴 Spike kuruldu — 7sn içinde imha et!'; } });
+    btn.addEventListener('mouseleave',(e) => { e.stopPropagation(); if (phase===1 && holdTimer) { clearTimeout(holdTimer); clearInterval(holdInterval); btn.style.background=''; btn.querySelector('span').textContent='3sn basılı tut!'; status.textContent='🔴 Spike kuruldu — 7sn içinde imha et!'; } });
+
+    // Mobil dokunmatik
+    btn.addEventListener('touchstart',(e) => { e.stopPropagation(); btn.dispatchEvent(new MouseEvent('mousedown',{clientX:e.touches[0].clientX,clientY:e.touches[0].clientY})); }, {passive:true});
+    btn.addEventListener('touchend',  (e) => { e.stopPropagation(); btn.dispatchEvent(new MouseEvent('mouseup')); }, {passive:true});
+  }
+
+  // --- KARANLIK MOD BUTONU (19:30 ders çalışma) ---
+  if (block.time === '19:30') {
+    const btn = document.createElement('button');
+    btn.className = 'dark-toggle-btn';
+    btn.innerHTML = '💡 Gece Lambası';
+    btn.onclick = function() { toggleDarkMode(div, btn); };
+    detailInner.appendChild(btn);
+  }
+}
+
+
+
+
+
+let fpTimer = null;
+
+// Ayak izi SVG — parmaklar sağa bakacak şekilde yatay
+const FOOT_RIGHT_SVG = '<svg viewBox="0 0 80 50" xmlns="http://www.w3.org/2000/svg"><ellipse cx="58" cy="20" ry="14" rx="18"/><ellipse cx="22" cy="22" ry="12" rx="16"/><rect x="34" y="15" height="14" width="8" rx="4"/></svg>';
+
+const FOOT_LEFT_SVG = '<svg viewBox="0 0 80 50" xmlns="http://www.w3.org/2000/svg"><ellipse cx="58" cy="30" ry="14" rx="18"/><ellipse cx="22" cy="28" ry="12" rx="16"/><rect x="34" y="22" height="14" width="8" rx="4"/></svg>';
+
+function animateFootprints() {
+  const widget = document.getElementById('footprint-widget');
+  if (!widget) return;
+  if (fpTimer) clearInterval(fpTimer);
+
+  widget.innerHTML = '';
+
+  // Karanlık modda sağdan sola (geri geri), aydınlık modda soldan sağa
+  const reverse = isDarkTheme;
+  const stepSize = reverse ? -8 : 8;
+  let nextPos = reverse ? 90 : 2;
+  let prints = [];
+  let isRight = true;
+
+  fpTimer = setInterval(() => {
+    const fp = document.createElement('div');
+    fp.className = 'footprint ' + (isRight ? 'foot-right' : 'foot-left');
+    fp.innerHTML = isRight ? FOOT_RIGHT_SVG : FOOT_LEFT_SVG;
+    fp.style.left = nextPos + '%';
+    widget.appendChild(fp);
+
+    requestAnimationFrame(() => { fp.style.opacity = '1'; });
+
+    prints.push(fp);
+    nextPos += stepSize;
+    isRight = !isRight;
+
+    if (prints.length > 2) {
+      const old = prints.shift();
+      old.style.opacity = '0';
+      setTimeout(() => old.remove(), 350);
+    }
+
+    const ended = reverse ? (nextPos < 2) : (nextPos > 90);
+    if (ended) {
+      nextPos = reverse ? 90 : 2;
+      isRight = true;
+      prints.forEach(p => {
+        p.style.opacity = '0';
+        setTimeout(() => p.remove(), 350);
+      });
+      prints = [];
+    }
+  }, 600);
+}
+
+let retBusAnimId = null;
+let retBusTimer  = null;
+
+function animateReturnBus() {
+  const bus = document.getElementById('return-bus-icon');
+  if (!bus) return;
+
+  if (retBusAnimId) cancelAnimationFrame(retBusAnimId);
+  if (retBusTimer) clearTimeout(retBusTimer);
+
+  bus.style.transition = 'none';
+
+  // Aydınlık: soldan sağa (eve dönüş), karanlık: sağdan sola (ters)
+  const goRight = !isDarkTheme;
+  let pos    = goRight ? -15 : 110;
+  const endPos = goRight ? 110 : -15;
+  const dir  = goRight ? 0.4 : -0.4;
+  bus.style.transform = 'scaleX(-1)';
+  bus.style.left = pos + '%';
+
+  const step = () => {
+    pos += dir;
+    bus.style.left = pos + '%';
+    const keep = goRight ? (pos < endPos) : (pos > endPos);
+    if (keep) {
+      retBusAnimId = requestAnimationFrame(step);
+    } else {
+      retBusAnimId = null;
+      retBusTimer = setTimeout(animateReturnBus, 1000);
+    }
+  };
+  retBusAnimId = requestAnimationFrame(step);
+}
+
+let busAnimId = null;
+let busTimer  = null;
+
+function animateBus() {
+  const bus = document.getElementById('bus-icon');
+  if (!bus) return;
+
+  // Önceki çalışan animasyon varsa durdur
+  if (busAnimId) cancelAnimationFrame(busAnimId);
+  if (busTimer) clearTimeout(busTimer);
+
+  bus.style.transition = 'none';
+
+  // Aydınlık: sağdan sola (okula gidiş), karanlık: soldan sağa (ters)
+  const goRight = isDarkTheme;
+  let pos    = goRight ? -15 : 110;
+  const endPos = goRight ? 110 : -15;
+  const dir  = goRight ? 0.4 : -0.4;
+  bus.style.transform = 'scaleX(1)';
+  bus.style.left = pos + '%';
+
+  const step = () => {
+    pos += dir;
+    bus.style.left = pos + '%';
+    const keep = goRight ? (pos < endPos) : (pos > endPos);
+    if (keep) {
+      busAnimId = requestAnimationFrame(step);
+    } else {
+      busAnimId = null;
+      busTimer = setTimeout(animateBus, 1000);
+    }
+  };
+  busAnimId = requestAnimationFrame(step);
+}
+
+let drinkActive = null;
+const DRINK_ZONE_IDX = 3;
+
+function pickDrink(btn, type, picker) {
+  picker.querySelectorAll('.drink-btn').forEach(b => {
+    b.classList.remove('active-lemon', 'active-coffee');
+  });
+
+  const card = picker.closest('.card');
+
+  // aynı butona tekrar basınca: kart rengini sıfırla
+  if (drinkActive === type) {
+    drinkActive = null;
+    if (card) card.style.cssText = '';
+    return;
+  }
+
+  drinkActive = type;
+  btn.classList.add(type === 'lemon' ? 'active-lemon' : 'active-coffee');
+
+  // Karanlık modda soluk tonlar, aydınlık modda canlı tonlar
+  if (card) {
+    let bg;
+    if (isDarkTheme) {
+      bg = type === 'lemon'
+        ? 'rgba(235, 232, 94, 0.80)'  // #EBE85E sarı
+        : 'rgba(184, 148, 114, 0.75)'; // #B89472 soluk kahverengi
+    } else {
+      bg = type === 'lemon'
+        ? 'rgba(255, 235, 40, 0.75)'
+        : 'rgba(101, 55, 15, 0.75)';
+    }
+    card.style.cssText = `background: ${bg} !important; transition: background 0.4s ease;`;
+  }
+}
+
+let darkModeOn = false;
+function toggleDarkMode(blockDiv, btn) {
+  darkModeOn = !darkModeOn;
+  blockDiv.classList.toggle('dark-mode-active', darkModeOn);
+  btn.classList.toggle('lit', darkModeOn);
+  btn.innerHTML = darkModeOn ? '🌙 Karanlık Mod Açık' : '💡 Gece Lambası';
+}
+
+function toggleCard(card) {
+  const isOpen = card.classList.contains('open');
+  document.querySelectorAll('.card.open').forEach(c => {
+    c.classList.remove('open');
+    c.setAttribute('aria-expanded', 'false');
+  });
+  if (!isOpen) {
+    card.classList.add('open');
+    card.setAttribute('aria-expanded', 'true');
+  }
+}
+
+/* ── INTERSECTION OBSERVER ────────────────────────────────────────────────── */
+function observeBlocks() {
+  const blocks = document.querySelectorAll('.time-block');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), 20);
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.10, rootMargin: '0px 0px -60px 0px' });
+
+  blocks.forEach(b => obs.observe(b));
+}
+
+/* ── SCROLL → ZONE ────────────────────────────────────────────────────────── */
+function updateZoneFromScroll() {
+  // Scroll yönünü tespit et
+  const currentY = window.scrollY;
+  const scrollingDown = currentY > lastScrollY;
+  lastScrollY = currentY;
+
+  const data   = currentMode === 'weekday' ? WEEKDAY : WEEKEND;
+  const clocks = CLOCK_LABELS[currentMode];
+  const blocks = document.querySelectorAll('.time-block');
+
+  // İlerleme çubuğu
+  const scrollTop = window.scrollY;
+  const docH      = document.documentElement.scrollHeight - window.innerHeight;
+  const pct       = docH > 0 ? (scrollTop / docH) * 100 : 0;
+  document.getElementById('progress-bar').style.width = pct + '%';
+
+  // Hangi blok ekranın ortasına en yakın?
+  // Aktif blok = viewport ortasına en yakın olan
+  let activeIdx = 0;
+  let minDist = Infinity;
+  const viewportCenter = window.innerHeight / 2;
+  blocks.forEach((b, i) => {
+    const rect = b.getBoundingClientRect();
+    const blockCenter = rect.top + rect.height / 2;
+    const dist = Math.abs(blockCenter - viewportCenter);
+    if (dist < minDist) {
+      minDist = dist;
+      activeIdx = i;
+    }
+  });
+
+  const zoneIdx = data[activeIdx]?.zone ?? 0;
+
+  // Saat etiketi güncelle
+  // Karanlık modda veri ters — clock index'i de ters al
+  const maxIdx   = clocks.length - 1;
+  const clockIdx = isDarkTheme
+    ? Math.max(0, maxIdx - activeIdx)
+    : Math.min(activeIdx, maxIdx);
+  const clock    = document.getElementById('sticky-clock');
+  clock.textContent = clocks[clockIdx][0] + ' ' + clocks[clockIdx][1];
+
+  // Enerji ve terminal — clock'un gösterdiği saate göre
+  const clockTime = clocks[clockIdx][0];
+  const activeBlockTime = getCurrentData()[activeIdx]?.time;
+  if (activeBlockTime) {
+    updateEnergyBar(activeBlockTime);
+    updateTerminalForBlock(activeBlockTime, scrollingDown);
+  }
+
+  // Yıldızlar her scroll'da kontrol edilsin — zone'dan bağımsız
+  const curBlockTime = getCurrentData()[activeIdx]?.time;
+  setNightMode(curBlockTime === '00:00' || curBlockTime === '00:30');
+
+  if (zoneIdx === currentZoneIdx) return;
+  currentZoneIdx = zoneIdx;
+
+  transitionToZone(zoneIdx);
+  updateTextColor(zoneIdx);
+
+
+}
+
+window.addEventListener('scroll', updateZoneFromScroll, { passive: true });
+
+/* ── MOD GEÇIŞI ───────────────────────────────────────────────────────────── */
+function setMode(mode) {
+  if (mode === currentMode) return;
+  currentMode = mode;
+
+  const isWeekday = mode === 'weekday';
+
+  document.getElementById('mode-badge').textContent = isWeekday ? '📅 HAFTA İÇİ' : '🌿 HAFTA SONU';
+  document.getElementById('day-icon').textContent   = isWeekday ? '☀️' : '🌿';
+
+  document.getElementById('main-title').innerHTML = isWeekday
+    ? 'Bir Günümde <span>Ben</span>'
+    : 'Hafta Sonumda <span>Ben</span>';
+
+  document.getElementById('header-sub').textContent = isWeekday
+    ? 'Odaklanma ve Gelişim Günü — Rutin, projeler, öğrenme süreci ve zihinsel yoğunluk üzerine bir gün.'
+    : 'Ruhun Dinlenmesi ve Yaratıcılık — Deşarj olmak, sanatsal üretim, oyun ve kişisel hobilere vakit ayırmak üzerine bir gün.';
+
+  document.getElementById('btn-left').classList.toggle('hidden',   isWeekday);
+  document.getElementById('btn-right').classList.toggle('hidden', !isWeekday);
+  document.getElementById('mob-weekday').classList.toggle('active',  isWeekday);
+  document.getElementById('mob-weekend').classList.toggle('active', !isWeekday);
+
+  currentRGB = null;
+  cancelAnimationFrame(rafId);
+  rafId = null;
+
+  // Log kilitle, sayfa başa git
+  lastLoggedTime = 'LOCKED';
+  window.scrollTo({ top: 0, behavior: 'instant' });
+
+  buildTimeline(getCurrentData());
+
+  // Enerji çubuğu
+  const energyBar = document.getElementById('energy-bar-wrap');
+  if (energyBar) {
+    if (isWeekday) { energyBar.style.left = '14px'; energyBar.style.right = 'auto'; }
+    else           { energyBar.style.right = '14px'; energyBar.style.left = 'auto'; }
+  }
+  const firstTime = isWeekday ? '07:30' : '09:30';
+  setTimeout(() => updateEnergyBar(firstTime), 400);
+
+  // Terminal: karanlık modda mı yoksa aydınlık mı?
+  clearTerminal().then(() => {
+    if (isDarkTheme) {
+      // Karanlık moddan karanlık moda geçiş — yeni modun karanlık mesajları
+      if (isWeekday) {
+        // Hafta sonundan hafta içine (karanlık)
+        addTerminalLog('error',  "[SYSTEM] CRITICAL: Karanlık hafta içi moduna geçildi. Zaman geriye akıyor...", true);
+        setTimeout(() => addTerminalLog('error',  "CRITICAL: Zaman döngüsü kırıldı. Christopher Nolan modu aktif. Diyagramlar tersine!", true), 900);
+        setTimeout(() => addTerminalLog('warn',   "Warning: Zaman paradoksu yaşanıyor. Lütfen koltuğunuza dik oturun.", true), 1800);
+        setTimeout(() => addTerminalLog('system', "[INFO] Geçmişe doğru gidiyorsunuz. Keşkelerinizi düzeltmek için son şans.", true), 2700);
+      } else {
+        // Hafta içinden hafta sonuna (karanlık)
+        addTerminalLog('error',  "[SYSTEM] CRITICAL: Karanlık hafta sonu moduna geçildi. Zaman geriye akıyor...", true);
+        setTimeout(() => addTerminalLog('error',  "CRITICAL: Zaman döngüsü kırıldı. Christopher Nolan modu aktif. Diyagramlar tersine!", true), 900);
+        setTimeout(() => addTerminalLog('warn',   "Warning: Zaman paradoksu yaşanıyor. Lütfen koltuğunuza dik oturun.", true), 1800);
+        setTimeout(() => addTerminalLog('system', "[INFO] Geçmişe doğru gidiyorsunuz. Keşkelerinizi düzeltmek için son şans.", true), 2700);
+      }
+    } else {
+      // Aydınlık modda normal geçiş mesajları
+      if (isWeekday) {
+        addTerminalLog('error',  "[SYSTEM] CRITICAL WARNING: Hafta sonu konfor alani terk ediliyor! 'Gercek Hayat' motorlari calistirildi.", true);
+        setTimeout(() => addTerminalLog('log',    "[LOG] SYSTEM: Oyun sunuculari ile baglanti kesildi. 'Amfi, Laboratuvar ve Kodlama' dizini belirlendi.", true), 1000);
+        setTimeout(() => addTerminalLog('warn',   "[LOG] WARNING: Alarm sesleri aktif edildi. Pazartesi sendromuna karsi savunma yukleniyor...", true), 2000);
+        setTimeout(() => addTerminalLog('system', "[SUCCESS] STATUS: 'Kosturmaca Dongusu' (while(true){okula_git();kod_yaz();}) baslatildi.", true), 3000);
+      } else {
+        addTerminalLog('system', "[SYSTEM] NOTICE: Hafta ici mesaisi tamamlandi. 'Ozgurluk Protokolu' devreye giriyor.", true);
+        setTimeout(() => addTerminalLog('log',    "[LOG] SUCCESS: 'Sonsuz Kod Dongusu' durduruldu (Break). Beyin fanlari yavaslatiliyor.", true), 1000);
+        setTimeout(() => addTerminalLog('log',    "[LOG] INFO: Alarm protokolleri deaktif edildi. 'Suresiz Uyku' izni verildi.", true), 2000);
+        setTimeout(() => addTerminalLog('log',    "[LOG] STATUS: Sistem yenilenme (Recharge) moduna gecti. Keyfinize bakin!", true), 3000);
+      }
+    }
+
+    // Kilit aç
+    setTimeout(() => {
+      lastLoggedTime = null;
+      updateZoneFromScroll();
+    }, isDarkTheme ? 3500 : 3800);
+  });
+}
+
+
+/* ── ENERJİ ÇUBUĞU VERİSİ ── */
+const ENERGY_WEEKDAY = {
+  '07:30': { pct: 100, icon: '⚡' },
+  '09:00': { pct: 90,  icon: '🎯' },
+  '12:15': { pct: 50,  icon: '😴' },
+  '13:00': { pct: 65,  icon: '☕' },
+  '13:30': { pct: 95,  icon: '💪' },
+  '16:30': { pct: 40,  icon: '😮' },
+  '18:00': { pct: 60,  icon: '😌' },
+  '19:30': { pct: 80,  icon: '🧠' },
+  '22:30': { pct: 30,  icon: '🎮' },
+  '00:00': { pct: 5,   icon: '😪' },
+};
+const ENERGY_WEEKEND = {
+  '09:30': { pct: 100, icon: '⚡' },
+  '11:00': { pct: 90,  icon: '💻' },
+  '14:00': { pct: 60,  icon: '👟' },
+  '16:00': { pct: 85,  icon: '🛍️' },
+  '18:30': { pct: 70,  icon: '🍲' },
+  '20:00': { pct: 60,  icon: '🎮' },
+  '22:30': { pct: 30,  icon: '🎬' },
+  '00:30': { pct: 10,  icon: '😪' },
+};
+
+function updateEnergyBar(time) {
+  const map  = currentMode === 'weekday' ? ENERGY_WEEKDAY : ENERGY_WEEKEND;
+  const data = map[time];
+  if (!data) return;
+  const fill = document.getElementById('energy-fill');
+  const pct  = document.getElementById('energy-pct');
+  const icon = document.getElementById('energy-icon');
+  if (fill) fill.style.height = data.pct + '%';
+  if (pct)  pct.textContent   = data.pct + '%';
+  if (icon) icon.textContent  = data.icon;
+  let color;
+  if (data.pct >= 70)      color = 'linear-gradient(180deg,#a8ffb0 0%,#50e060 100%)';
+  else if (data.pct >= 40) color = 'linear-gradient(180deg,#fff3a0 0%,#ffd020 100%)';
+  else                     color = 'linear-gradient(180deg,#ffb0a0 0%,#ff5040 100%)';
+  if (fill) fill.style.background = color;
+}
+
+
+/* ── KOYU MOD ZONE RENKLERİ ── */
+const ZONES_DARK_WEEKDAY = [
+  { start: [ 25,   4,  90], end: [ 18,   2,  65] },  // 0 Koyu Lacivert
+  { start: [ 90,  15,  60], end: [ 70,  10,  45] },  // 1 Ara: Lacivert→Kırmızı
+  { start: [160,  28,  10], end: [140,  20,   6] },  // 2 Koyu Kırmızı
+  { start: [180,  80,   8], end: [165,  65,   5] },  // 3 Ara: Kırmızı→Turuncu
+  { start: [200, 110,  10], end: [185,  95,   6] },  // 4 Koyu Turuncu
+  { start: [185, 160,  20], end: [170, 145,  15] },  // 5 Ara: Turuncu→Sarı
+  { start: [180, 175,  30], end: [165, 160,  22] },  // 6 Koyu Sarı
+  { start: [100, 165, 180], end: [ 85, 150, 165] },  // 7 Ara: Sarı→Mavi
+  { start: [ 80, 180, 210], end: [ 65, 165, 195] },  // 8 Koyu Mavi
+];
+
+const ZONES_DARK_WEEKEND = [
+  { start: [ 25,   4,  90], end: [ 18,   2,  65] },  // 0 Koyu Lacivert
+  { start: [ 90,  15,  60], end: [ 70,  10,  45] },  // 1 Ara
+  { start: [190,  60,  35], end: [175,  48,  25] },  // 2 Koyu Kırmızı-Turuncu
+  { start: [175,  85,   0], end: [160,  72,   0] },  // 3 Ara
+  { start: [170, 100,   0], end: [155,  88,   0] },  // 4 Koyu Turuncu
+  { start: [175, 175,  25], end: [160, 160,  18] },  // 5 Ara
+  { start: [175, 195,  35], end: [160, 180,  28] },  // 6 Koyu Sarı
+  { start: [ 90, 165, 185], end: [ 75, 150, 170] },  // 7 Ara
+  { start: [ 60, 160, 200], end: [ 45, 145, 185] },  // 8 Koyu Mavi
+];
+
+
+/* ── SPİKE PATLAMA EFEKTLERİ ── */
+function triggerExplosionParticles(x, y, big) {
+  const colors = big
+    ? ['#ff4444','#ff8800','#ffcc00','#ff6600','#ffffff']
+    : ['#ff4444','#cc0000','#ff6666'];
+  const count = big ? 18 : 8;
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const angle = (i / count) * Math.PI * 2;
+    const dist  = big ? (60 + Math.random()*80) : (30 + Math.random()*40);
+    const tx = Math.cos(angle) * dist;
+    const ty = Math.sin(angle) * dist;
+    p.style.cssText = `
+      left:${x}px; top:${y}px;
+      background:${colors[i % colors.length]};
+      transform-origin: center;
+    `;
+    p.style.setProperty('--tx', tx + 'px');
+    p.style.setProperty('--ty', ty + 'px');
+    p.style.animation = `particleFly ${0.5 + Math.random()*0.4}s ease-out forwards`;
+    p.style.transform = `translate(${tx}px, ${ty}px)`;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 900);
+  }
+}
+
+function triggerBigExplosion(x, y, fail) {
+  const emojis = fail ? ['💥','💀','🔥','💥'] : ['💥','✨','🎉','💥'];
+  emojis.forEach((emoji, i) => {
+    const el = document.createElement('div');
+    el.className = 'explosion';
+    el.textContent = emoji;
+    el.style.left = (x + (i-1.5)*28) + 'px';
+    el.style.top  = y + 'px';
+    el.style.animationDelay = (i * 0.08) + 's';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  });
+
+  const txt = document.createElement('div');
+  txt.className = 'explosion-text';
+  txt.textContent = fail ? '💀 SPIKE PATLADI! TUR KAYBEDILDI!' : '✅ SPIKE İMHA! TUR BİZDE!';
+  txt.style.left = x + 'px';
+  txt.style.top  = y + 'px';
+  document.body.appendChild(txt);
+  setTimeout(() => txt.remove(), 1500);
+}
+
+
+/* ── TERMİNAL LOG SİSTEMİ ── */
+const WEEKDAY_LOGS = {
+  '07:30': { type:'log',   msg:'[07:30] Log: Alarm çaldı. Uyku modu sonlandırıldı. Acil hazırlanma protokolü başlatıldı.' },
+  '09:00': { type:'event', msg:'[09:00] Event: Kampüs ağına bağlanıldı. Ders modu aktif. Not defteri açılıyor...' },
+  '12:15': { type:'log',   msg:'[12:15] Log: Öğle yemeği protokolü devreye girdi. Yemek sensörü: et yemeği tespit edildi ✓' },
+  '13:00': { type:'warn',  msg:'[13:00] Warning: Yüksek miktarda kafein tespit edildi! Uyku riski azaltıldı.' },
+  '13:30': { type:'event', msg:'[13:30] Event: IDE başlatıldı. Python 3.x aktif. SQLite bağlantısı kuruldu.' },
+  '16:30': { type:'log',   msg:'[16:30] Log: Kampüs çıkış protokolü. Eve dönüş rotası hesaplanıyor...' },
+  '18:00': { type:'log',   msg:'[18:00] Log: Ekran kilidi aktif. Dizi modu başlatıldı. "Sadece 1 bölüm" parametresi: FALSE' },
+  '19:30': { type:'event', msg:'[19:30] Event: Gece çalışma modu açıldı. Odak seviyesi: %80. Kahve: içildi.' },
+  '20:30': { type:'event', msg:'[20:30] Event: Oyun sevdalıları ekran başında. Valorant başlatılıyor. Troll tespiti: kaçınılmaz.' },
+  '22:30': { type:'warn',  msg:'[22:30] Warning: Oyun sevdalıları ekran başında. Verimlilik: DROP. Spike: kuruldu.' },
+  '00:00': { type:'system',msg:'[00:00] System: Gün kapanışı. Tüm işlemler sonlandırılıyor. Uyku modu: T-minus 5 dakika.' },
+};
+
+const WEEKEND_LOGS = {
+  '09:30': { type:'log',   msg:'[09:30] Log: Alarm devre dışı. Yavaş başlangıç modu aktif. Kahve hazırlanıyor...' },
+  '11:00': { type:'event', msg:'[11:00] Event: Hafta sonu çalışma oturumu başlatıldı. Odak seviyesi: %90.' },
+  '14:00': { type:'log',   msg:'[14:00] Log: Bilgisayar kilitleniyor. Dışarı çıkış sensörü aktif. Playlist: yüklendi.' },
+  '16:00': { type:'warn',  msg:'[16:00] Warning: Kredi kartı bağlantısı tespit edildi. Harcama modülü devreye girdi.' },
+  '18:30': { type:'log',   msg:'[18:30] Log: Akşam yemeği protokolü tamamlandı. Enerji yenilendi. Ağırlık: +++ ' },
+  '20:00': { type:'event', msg:'[20:00] Event: Oyun sevdalıları ekran başında. Valorant başlatılıyor. Troll tespiti: kaçınılmaz.' },
+  '22:30': { type:'log',   msg:'[22:30] Log: Dizi/film modu. Stres seviyesi düşüyor. Ekran parlaklığı: azaltıldı.' },
+  '00:30': { type:'system',msg:'[00:30] System: Hafta sonu kapanışı. Bataryalar dolduruluyor. İyi geceler.' },
+};
+
+const DARK_WEEKDAY_LOGS = {
+  '00:00': { type:'error',  msg:"[00:00] CRITICAL: Diyagramlar tersine, elektronlar geriye! ZAMAN GERİYE AKSIIIIIN..." },
+  '22:30': { type:'warn',   msg:"[22:30] WARNING: Valorant'ta kaybedilen o rank maçı hiç yaşanmadı! Puanlar hesaba iade ediliyor." },
+  '19:30': { type:'log',    msg:"[19:30] LOG: Beyindeki kod satırları hafızadan boşaltılıyor. İşlemci (CPU) sıcaklığı normale dönüyor." },
+  '18:00': { type:'system', msg:"[18:00] INFO: İzlenen dizi bölümü hafızadan siliniyor. Spoiler yeme riski ortadan kalktı, şanslısın." },
+  '16:30': { type:'system', msg:"[16:30] SYSTEM: Otobüs kampüse doğru geri geri gidiyor. Evden okula doğru tersine bir göç başladı." },
+  '13:30': { type:'error',  msg:"[13:30] CRITICAL: PyQt5 arayüzündeki tasarımlar kendi kendine çözülüyor, SQLite tabloları kolonlarını kusuyor!" },
+  '13:00': { type:'warn',   msg:"[13:00] WARNING: İçilen yemek sonrası kahvesi fincana geri dönüyor. Kafein vücuttan jet hızıyla çekildi! Korkunç!!!!" },
+  '12:15': { type:'log',    msg:"[12:15] SUCCESS: Yenilen öğle yemeği tabağa geri birleşti. Mide boşaltıldı, 'Açlık' protokolü yeniden yüklendi. Şekerler düşüşte!!" },
+  '09:00': { type:'system', msg:"[09:00] INFO: Hoca tahtaya yazdığı formülleri tersten silerek tahtayı temizliyor. Anlamadığın konular hafızandan siliniyor." },
+  '07:30': { type:'system', msg:"[07:30] SYSTEM: Gözler geri kapanıyor. Alarm sesi tersten çalıyor. Yatağa geri fırlatılış (Rüya modu aktif)." },
+};
+
+const DARK_WEEKEND_LOGS = {
+  '00:30': { type:'system', msg:"[00:30] SYSTEM: Gece Kapanışı geri sarılıyor. Zaman döngüsü başa döndü." },
+  '22:30': { type:'log',    msg:"[22:30] LOG: İzlenen Dizi ve Film bölümü unutturuluyor. Spoiler yeme riski ortadan kalktı." },
+  '20:00': { type:'log',    msg:"[20:00] LOG: Gaming Seansı geri sarılıyor... Atılan o kötü ulti hafızalardan silindi. Trollerden kurtulmak için hala bir şansımız var." },
+  '18:30': { type:'warn',   msg:"[18:30] WARNING: Akşam Yemeği tabağa geri birleşti. Tokluk hissi tersine döndü." },
+  '16:00': { type:'log',    msg:"[16:00] LOG: Alışveriş Vakti geri sarılıyor. Harcanan para hesaba geri yatırıldı!" },
+  '14:00': { type:'warn',   msg:"[14:00] WARNING: Temiz Hava molası tersine döndü. Atılan adımlar geri sayılıyor, kafa hala koddaki Syntax Error'da." },
+  '11:00': { type:'log',    msg:"[11:00] LOG: Kişisel Gelişim ve Ders hafızadan siliniyor. Git Revert tetiklendi! Tüm buglar hiç var olmamış gibi siliniyor." },
+  '09:30': { type:'log',    msg:"[09:30] LOG: Hafta Sonu Sabahı tersine dönüyor. Termodinamik yasaları çiğneniyor! Kahve fincana geri dönüyor, alarm tersine çalıyor. Rüya modu aktif." },
+};
+
+
+let lastLoggedTime = null;
+let scrollLogCount = 0;
+
+function clearTerminal() {
+  return new Promise(resolve => {
+    const body = document.getElementById('terminal-body');
+    if (!body) { resolve(); return; }
+
+    // Kalıcı sistem mesajlarını sakla
+    const persistLines = Array.from(body.querySelectorAll('[data-persist="true"]'))
+                              .map(el => el.cloneNode(true));
+
+    // $ clear yaz
+    const clearLine = document.createElement('div');
+    clearLine.className = 't-line t-system';
+    clearLine.textContent = '$ clear';
+    body.appendChild(clearLine);
+    body.scrollTop = body.scrollHeight;
+
+    setTimeout(() => {
+      body.innerHTML = '';
+      // Kalıcı mesajları geri koy
+      persistLines.forEach(el => body.appendChild(el));
+      // Ayırıcı
+      const sep = document.createElement('div');
+      sep.className = 't-line t-system';
+      sep.style.opacity = '0.35';
+      sep.textContent = '──────────────────────────────';
+      body.appendChild(sep);
+      // $ clear
+      const saved = clearLine.cloneNode(true);
+      body.appendChild(saved);
+      // cursor
+      const c = document.createElement('div');
+      c.className = 't-line t-cursor';
+      c.textContent = '▌';
+      body.appendChild(c);
+      body.scrollTop = body.scrollHeight;
+      resolve();
+    }, 300);
+  });
+}
+
+function addTerminalLog(type, msg, persist) {
+  const body   = document.getElementById('terminal-body');
+  if (!body) return;
+  const cursor = body.querySelector('.t-cursor');
+  const line   = document.createElement('div');
+  line.className = `t-line t-${type}`;
+  line.textContent = msg;
+  if (persist) line.dataset.persist = 'true';
+  if (cursor) body.insertBefore(line, cursor);
+  else body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+}
+
+let blockChangeCount = 0;
+
+function updateTerminalForBlock(time, scrollDown) {
+  if (lastLoggedTime === 'LOCKED') return;
+  if (time === lastLoggedTime) return;
+
+  // Yön tespit et — önceki saat sonra geliyorsa aşağı, önceyse yukarı
+  const prevTime = lastLoggedTime;
+  lastLoggedTime = time;
+  blockChangeCount++;
+
+  let logs;
+  if (isDarkTheme) {
+    logs = currentMode === 'weekday' ? DARK_WEEKDAY_LOGS : DARK_WEEKEND_LOGS;
+  } else {
+    logs = currentMode === 'weekday' ? WEEKDAY_LOGS : WEEKEND_LOGS;
+  }
+  if (logs[time]) addTerminalLog(logs[time].type, logs[time].msg);
+
+  // Her 2 blok değişiminde bir scroll yön mesajı ekle
+  if (prevTime && blockChangeCount % 2 === 0) {
+    const goingDown = scrollDown;
+    let pool;
+    if (isDarkTheme) {
+      pool = goingDown ? DARK_SCROLL_DOWN : DARK_SCROLL_UP;
+    } else {
+      pool = goingDown ? SCROLL_DOWN_LIGHT : SCROLL_UP_LIGHT;
+    }
+    const l = pool[Math.floor(Math.random() * pool.length)];
+    addTerminalLog(l.type, l.msg);
+  }
+}
+
+// Scroll'da rastgele log
+let scrollLogTimer = null;
+
+
+// Aydınlık mod — aşağı (zaman ilerliyor, geleceğe doğru)
+const SCROLL_DOWN_LIGHT = [
+  { type:'log',    msg:'[scroll] Zaman ilerliyor. Geleceğe doğru bir adım daha atıldı.' },
+  { type:'event',  msg:'[scroll] Saat ilerledi. Günün akışına devam ediliyor...' },
+  { type:'log',    msg:'[scroll] Zaman durmak bilmiyor. Verimli kullanmaya bak!' },
+  { type:'system', msg:'[scroll] Kronoloji ilerliyor. Gün bitmeden yapacak çok şey var.' },
+];
+// Aydınlık mod — yukarı (geçmişe bakış, zamanda geriye gidiliyor)
+const SCROLL_UP_LIGHT = [
+  { type:'warn',   msg:'[scroll] Geçmişe doğru hareket ediliyor. Ama zamanda yolculuk yok, sadece projeyi gözden geçiriyorsun.' },
+  { type:'log',    msg:'[scroll] Geriye döndün. Geçmişi değiştiremezsin ama inceleyebilirsin.' },
+  { type:'system', msg:'[scroll] Git log: Geçmiş commit inceleniyor. Hayatta revert yok maalesef!' },
+  { type:'warn',   msg:'[scroll] Zamanda geriye gidiliyor — ama sadece projede. Gerçekte bu lüks yok.' },
+];
+// Karanlık mod — aşağı (geçmişe yolculuk, zamanda geriye)
+const DARK_SCROLL_DOWN = [
+  { type:'error',  msg:'[scroll] Geçmişe yolculuk devam ediyor! Zaman geriye akıyor...' },
+  { type:'warn',   msg:'[scroll] Dikkat: Zaman tünelinde ilerliyorsunuz. Geçmiş yaklaşıyor.' },
+  { type:'error',  msg:'[scroll] Kronoloji tersine dönüyor. Her adım sizi daha geriye götürüyor.' },
+  { type:'system', msg:'[scroll] Zamanda geriye doğru ivme kazanıldı. Geri dönüş zorlaşıyor!' },
+];
+// Karanlık mod — yukarı (şimdiki zamana yaklaşılıyor)
+const DARK_SCROLL_UP = [
+  { type:'log',    msg:'[scroll] Şimdiki zamana doğru yaklaşılıyor. Zaman dengeleniyor.' },
+  { type:'system', msg:'[scroll] Bugüne doğru ilerleniyor. Kronoloji normalleşiyor...' },
+  { type:'log',    msg:'[scroll] Şimdiki zaman sensörü aktif. Gerçekliğe yaklaşılıyor.' },
+  { type:'warn',   msg:'[scroll] Dikkat: Bugüne dönüyorsunuz. Geçmiş geride kalıyor.' },
+];
+
+let lastScrollY = window.scrollY;
+
+// lastScrollY updateZoneFromScroll başında güncellenir
+
+// Mod değişiminde terminal güncelle
+const _origSetMode = window.setMode;
+
+let isInitialLoad = true;
+let isDarkTheme   = false;
+
+/* ── KOYU MOD TOGGLE ── */
+function toggleTheme() {
+  isDarkTheme = !isDarkTheme;
+  const btn  = document.getElementById('theme-toggle');
+  document.body.classList.toggle('dark-theme', isDarkTheme);
+  btn.textContent = isDarkTheme ? '🌙' : '🌞';
+
+  // Renk geçişini sıfırla
+  currentRGB = null;
+  cancelAnimationFrame(rafId);
+  rafId = null;
+  currentZoneIdx = -1;
+
+  // Log yazmayı kilitle — scroll event'i engelle
+  lastLoggedTime = 'LOCKED';
+
+  // 1) ANINDA clear + sistem mesajları
+  clearTerminal().then(() => {
+    if (isDarkTheme) {
+      addTerminalLog('error',  '[SYSTEM] ⚠️  Karanlık mod aktif. Zaman geriye akıyor...', true);
+      setTimeout(() => addTerminalLog('error',  'CRITICAL: Zaman döngüsü kırıldı. Christopher Nolan modu aktif. Diyagramlar tersine, elektronlar geriye!', true), 900);
+      setTimeout(() => addTerminalLog('warn',   'Warning: Zaman paradoksu yaşanıyor. Lütfen koltuğunuza dik oturun ve kahvenizi dökmemeye çalışın.', true), 1800);
+      setTimeout(() => addTerminalLog('system', '[INFO] Dikkat, geçmişe doğru gidiyorsunuz. Keşkelerinizi düzeltmek için son şans.', true), 2700);
+    } else {
+      if (currentMode === 'weekend') {
+        addTerminalLog('error',  '[CRITICAL] ⚠️  Fizik yasaları geçici olarak onarıldı.', true);
+        setTimeout(() => addTerminalLog('warn',   '[WARN] Evreni bozmadan zamanı ileri sarmayı başardık.', true), 800);
+        setTimeout(() => addTerminalLog('log',    '[INFO] Lütfen normal hızda kaydırmaya devam edin.', true), 1600);
+        setTimeout(() => addTerminalLog('system', '[SYSTEM] Şimdi kaldığımız yerden devam!', true), 2400);
+      } else {
+        addTerminalLog('system', '[SYSTEM] Aydınlık mod aktif. Normal zaman akışına dönüldü.', true);
+        setTimeout(() => addTerminalLog('log', '[INFO] Kronolojik sıra yeniden kuruldu. Hayat normale döndü.', true), 800);
+      }
+    }
+  });
+
+  // 2) Timeline rebuild + sayfa başa scroll
+  buildTimeline(getCurrentData());
+  window.scrollTo({ top: 0, behavior: 'instant' });
+
+  // 3) Scroll yerine oturunca kilidi aç — ilk bloğun logu yazılsın
+  setTimeout(() => {
+    lastLoggedTime = null;
+    updateZoneFromScroll();
+    const ft = getCurrentData()[0]?.time;
+    if (ft) updateEnergyBar(ft);
+  }, 800);
+}
+
+function getCurrentData() {
+  const base = currentMode === 'weekday' ? WEEKDAY : WEEKEND;
+  return isDarkTheme ? [...base].reverse() : base;
+}
+
+/* ── BAŞLAT ───────────────────────────────────────────────────────────────── */
+document.getElementById('btn-left').classList.add('hidden');
+buildTimeline(getCurrentData());
+setTimeout(() => { isInitialLoad = false; }, 800);
+
+  </script>
+</body>
+</html>
